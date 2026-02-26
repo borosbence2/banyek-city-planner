@@ -22,6 +22,30 @@
                 <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
             </div>
 
+            <div class="section collapsible-section">
+                <h2 class="section-header" data-toggle="fileContent">
+                    File <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="fileContent" style="display:block;">
+                    <button class="btn success" id="importFoeBtn">📥 Import from FoE Helper</button>
+                    <button class="btn" id="importEfficiencyBtn">📋 Import Efficiency Rating</button>
+                    <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
+                    <label class="efficiency-pertile-label" title="Check this if you exported from FoE Helper with the 'Value/tile' checkbox enabled (default). Uncheck if you exported without it.">
+                        <input type="checkbox" id="efficiencyPerTile" checked>
+                        &nbsp;Export was per-tile (Value/tile checked)
+                    </label>
+                    <div class="file-btn-grid">
+                        <button class="btn" id="saveBtn">💾 Save</button>
+                        <button class="btn" id="loadBtn">📂 Load</button>
+                        <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
+                        <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
+                    </div>
+                    <button class="btn danger" id="clearBtn">🗑 Clear All</button>
+                </div><!-- /.section-content -->
+            </div>
+
+            <div class="status" id="status">Mode: Select</div>
+
             <div class="city-info" id="cityInfo" style="display:none;">
                 <strong>Imported City Info:</strong><br>
                 <span id="cityInfoText"></span>
@@ -142,29 +166,6 @@
                 <button class="btn" id="prodOverviewBtn">📊 Production Overview</button>
             </div>
 
-            <div class="section collapsible-section">
-                <h2 class="section-header" data-toggle="fileContent">
-                    File <span class="section-arrow">▼</span>
-                </h2>
-                <div class="section-content" id="fileContent" style="display:block;">
-                    <button class="btn success" id="importFoeBtn">📥 Import from FoE Helper</button>
-                    <button class="btn" id="importEfficiencyBtn">📋 Import Efficiency Rating</button>
-                    <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
-                    <label class="efficiency-pertile-label" title="Check this if you exported from FoE Helper with the 'Value/tile' checkbox enabled (default). Uncheck if you exported without it.">
-                        <input type="checkbox" id="efficiencyPerTile" checked>
-                        &nbsp;Export was per-tile (Value/tile checked)
-                    </label>
-                    <div class="file-btn-grid">
-                        <button class="btn" id="saveBtn">💾 Save</button>
-                        <button class="btn" id="loadBtn">📂 Load</button>
-                        <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
-                        <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
-                    </div>
-                    <button class="btn danger" id="clearBtn">🗑 Clear All</button>
-                </div><!-- /.section-content -->
-            </div>
-
-            <div class="status" id="status">Mode: Select</div>
         </div>
 
         <div class="canvas-container">
