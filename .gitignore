@@ -1,0 +1,18 @@
+# Personal / game data exports (contain player IDs, city data)
+*.json
+!package.json
+
+# Python cache
+tools/__pycache__/
+*.pyc
+*.pyo
+
+# Claude Code settings
+.claude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo

@@ -1,0 +1,15 @@
+todos before release
+- finalized context menu
+- instead of the move / select options make this default, and add delete and duplicate to a right click context menu if possible
+- fix imports, currently some buildings are clamped from the top
+- add a "building pool" besides the canvas. If the user drags the building away from the grid, place them into the pool currently we don't need to "stack buildings". add a right click option to move buildings there (stash)
+- QI, Cultural settlement, etc mapmodes
+- more render modes
+
+
+- + add expansions button
+- QI library
+- Settlement types library
+- Quantum types library
+- test saving
+- export to image / pdf
