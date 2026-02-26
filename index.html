@@ -64,16 +64,22 @@
             </div><!-- /#buildingSection -->
 
             <div class="section collapsible-section">
-                <h2 class="section-header collapsed" data-toggle="optimizeContent">Optimize <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header collapsed" data-toggle="optimizeContent">
+                    Optimize <span class="section-arrow">▼</span>
+                </h2>
                 <div class="section-content" id="optimizeContent" style="display:none;">
-                <button class="btn warning" id="optimizeBtn">⚡ Optimize Layout <span class="coming-soon-badge">Coming Soon</span></button>
-                <button class="btn tool" id="undoOptimizeBtn" style="display:none;">↩️ Undo Optimization</button>
-                <div class="progress-container" id="progressContainer">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
+                    <button class="btn warning" id="optimizeBtn" disabled>
+                        ⚡ Optimize Layout <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                    <button class="btn tool" id="undoOptimizeBtn" style="display:none;">
+                        ↩️ Undo Optimization
+                    </button>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Initializing...</div>
                     </div>
-                    <div class="progress-text" id="progressText">Initializing...</div>
-                </div>
                 </div><!-- /.section-content -->
             </div>
 
@@ -137,22 +143,24 @@
             </div>
 
             <div class="section collapsible-section">
-                <h2 class="section-header collapsed" data-toggle="fileContent">File <span class="section-arrow">▼</span></h2>
-                <div class="section-content" id="fileContent" style="display:none;">
-                <button class="btn success" id="importFoeBtn">📥 Import from FoE Helper</button>
-                <button class="btn" id="importEfficiencyBtn">📋 Import Efficiency Rating</button>
-                <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
-                <label class="efficiency-pertile-label" title="Check this if you exported from FoE Helper with the 'Value/tile' checkbox enabled (default). Uncheck if you exported without it.">
-                    <input type="checkbox" id="efficiencyPerTile" checked>
-                    &nbsp;Export was per-tile (Value/tile checked)
-                </label>
-                <div class="file-btn-grid">
-                    <button class="btn" id="saveBtn">💾 Save</button>
-                    <button class="btn" id="loadBtn">📂 Load</button>
-                    <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
-                    <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
-                </div>
-                <button class="btn danger" id="clearBtn">🗑 Clear All</button>
+                <h2 class="section-header" data-toggle="fileContent">
+                    File <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="fileContent" style="display:block;">
+                    <button class="btn success" id="importFoeBtn">📥 Import from FoE Helper</button>
+                    <button class="btn" id="importEfficiencyBtn">📋 Import Efficiency Rating</button>
+                    <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
+                    <label class="efficiency-pertile-label" title="Check this if you exported from FoE Helper with the 'Value/tile' checkbox enabled (default). Uncheck if you exported without it.">
+                        <input type="checkbox" id="efficiencyPerTile" checked>
+                        &nbsp;Export was per-tile (Value/tile checked)
+                    </label>
+                    <div class="file-btn-grid">
+                        <button class="btn" id="saveBtn">💾 Save</button>
+                        <button class="btn" id="loadBtn">📂 Load</button>
+                        <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
+                        <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
+                    </div>
+                    <button class="btn danger" id="clearBtn">🗑 Clear All</button>
                 </div><!-- /.section-content -->
             </div>
 
