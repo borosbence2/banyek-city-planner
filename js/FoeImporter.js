@@ -102,8 +102,13 @@ export class FoeImporter {
             p.gridHeight = Math.max(20, b.maxY - b.minY + 4);
         }
 
-        this.importEntities(entities, cityEntitiesMetadata, offsetX, offsetY);
+        // Compute grid bounds and unlock cells BEFORE placing buildings.
+        // rebuildUnlockedCells → _recomputeGridBounds sets gridWidth/Height from
+        // unlockedAreas when areas are present; for area-less cities gridWidth/Height
+        // were already set by calculateGridBounds in the else branch above.
         p.rebuildUnlockedCells();
+
+        this.importEntities(entities, cityEntitiesMetadata, offsetX, offsetY);
 
         return p.getSnapshot();
     }
@@ -289,8 +294,13 @@ export class FoeImporter {
 
             const building = { id: entityId, x, y, width, height, name, type: buildingType, color, age, eraCode, eventName, needsRoad, currentProd, expiration, expireDuration, revertName, ...(boosts.length > 0 && { boosts }), ...(gbLevel !== null && { gbLevel }) };
 
-            // If the building hangs outside the grid, send it to the pool instead of clipping it
-            if (x < 0 || y < 0 || x + width > p.gridWidth || y + height > p.gridHeight) {
+            // Expand the grid if the building would overflow — all imported buildings
+            // should land on the canvas, never the pool (pool is for user drag-off).
+            if (x + width  > p.gridWidth)  p.gridWidth  = x + width  + 1;
+            if (y + height > p.gridHeight) p.gridHeight = y + height + 1;
+
+            if (x < 0 || y < 0) {
+                // Negative coordinates shouldn't occur with correct offsetting — pool as last resort
                 p.buildingPool.push(building);
                 pooledCount++;
             } else {
