@@ -121,7 +121,7 @@ body {
 .view-hint {
     font-size: 10px;
     color: #888;
-    margin: 4px 0 8px 0;
+    margin: 4px 0 6px 0;
     font-style: italic;
 }
 
@@ -288,10 +288,23 @@ body {
     margin-bottom: 10px;
 }
 
+.section-content {
+    padding-top: 6px;
+    overflow: hidden;
+    opacity: 1;
+    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, padding-top 0.2s ease;
+}
+
+.section-content.collapsed {
+    padding-top: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .section h2 {
     font-size: 12px;
     color: #666;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 1px;
     display: flex;
@@ -302,7 +315,7 @@ body {
 .search-box {
     width: 100%;
     padding: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 12px;
@@ -460,6 +473,7 @@ body {
 
 .status {
     padding: 8px;
+    margin-bottom: 8px;
     background: #e9ecef;
     border-radius: 6px;
     font-size: 11px;

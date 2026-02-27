@@ -194,13 +194,37 @@ export class EventHandler {
             });
         }
 
-        // Collapsible sidebar sections
+        // Collapsible sidebar sections — fluid height animation via scrollHeight
+        document.querySelectorAll('.section-content.collapsed').forEach(el => {
+            el.style.maxHeight = '0px';
+        });
+
         document.querySelectorAll('.section-header[data-toggle]').forEach(header => {
             header.addEventListener('click', () => {
                 const content = document.getElementById(header.dataset.toggle);
                 if (!content) return;
-                const isCollapsed = content.style.display === 'none';
-                content.style.display = isCollapsed ? '' : 'none';
+                const isCollapsed = content.classList.contains('collapsed');
+
+                if (isCollapsed) {
+                    // Expand: remove class first so scrollHeight reflects full content
+                    content.classList.remove('collapsed');
+                    const fullH = content.scrollHeight;
+                    content.offsetHeight; // force reflow so transition starts from 0
+                    content.style.maxHeight = fullH + 'px';
+                    const onEnd = (e) => {
+                        if (e.propertyName !== 'max-height') return;
+                        content.style.maxHeight = ''; // unconstrain after animation
+                        content.removeEventListener('transitionend', onEnd);
+                    };
+                    content.addEventListener('transitionend', onEnd);
+                } else {
+                    // Collapse: lock to current height, then animate to 0
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    content.offsetHeight; // force reflow
+                    content.classList.add('collapsed');
+                    content.style.maxHeight = '0px';
+                }
+
                 header.classList.toggle('collapsed', !isCollapsed);
             });
         });
@@ -338,6 +362,8 @@ export class EventHandler {
             p.draggingBuilding = clickedBuilding;
             p.dragOffset   = { x: gridPos.x - clickedBuilding.x, y: gridPos.y - clickedBuilding.y };
             p.dragStartPos = { x: clickedBuilding.x, y: clickedBuilding.y };
+            p.dragPixelX   = e.clientX;
+            p.dragPixelY   = e.clientY;
             p.updateSelectionBanner();
             p.renderer.draw();
             return;
@@ -358,12 +384,16 @@ export class EventHandler {
                         p.roads.delete(`${ax + dx},${ay + dy}`);
                 p.draggingWideRoad  = { x: ax, y: ay };
                 p.wideRoadDragStart = { x: ax, y: ay };
+                p.wideRoadDragPixelX = e.clientX;
+                p.wideRoadDragPixelY = e.clientY;
             } else {
                 // Narrow road drag
                 p.selectedRoad  = roadKey;
                 p.draggingRoad  = { x: gridPos.x, y: gridPos.y };
                 p.roadDragStart = { x: gridPos.x, y: gridPos.y };
                 p.roads.delete(roadKey);
+                p.roadDragPixelX = e.clientX;
+                p.roadDragPixelY = e.clientY;
             }
             p.updateSelectionBanner();
             p.renderer.draw();
@@ -376,19 +406,26 @@ export class EventHandler {
     handleMouseMove(e) {
         const p = this.p;
 
+        // Free pixel drag — snap only on mouseup
+        if (p.draggingBuilding) {
+            p.dragPixelX = e.clientX;
+            p.dragPixelY = e.clientY;
+            p.renderer.draw();
+            this._hideTooltip();
+            return;
+        }
+
         if (p.draggingRoad) {
-            const gridPos = p.getGridCoords(e.clientX, e.clientY);
-            p.draggingRoad.x = gridPos.x;
-            p.draggingRoad.y = gridPos.y;
+            p.roadDragPixelX = e.clientX;
+            p.roadDragPixelY = e.clientY;
             p.renderer.draw();
             this._hideTooltip();
             return;
         }
 
         if (p.draggingWideRoad) {
-            const gridPos = p.getGridCoords(e.clientX, e.clientY);
-            p.draggingWideRoad.x = gridPos.x;
-            p.draggingWideRoad.y = gridPos.y;
+            p.wideRoadDragPixelX = e.clientX;
+            p.wideRoadDragPixelY = e.clientY;
             p.renderer.draw();
             this._hideTooltip();
             return;
@@ -423,20 +460,11 @@ export class EventHandler {
             p.renderer.draw();
         }
 
-        if (p.draggingBuilding) {
-            p.draggingBuilding.x = gridPos.x - p.dragOffset.x;
-            p.draggingBuilding.y = gridPos.y - p.dragOffset.y;
-            p.renderer.draw();
-            this._hideTooltip();
-        } else if (!p.draggingBuilding) {
-            this._updateCursorForHover(gridPos);
-            this._updateTooltip(e.clientX, e.clientY, gridPos);
-        } else {
-            this._hideTooltip();
-        }
+        this._updateCursorForHover(gridPos);
+        this._updateTooltip(e.clientX, e.clientY, gridPos);
     }
 
-    handleMouseUp(_e) {
+    handleMouseUp(e) {
         const p = this.p;
 
         if (p.isPanning) {
@@ -446,14 +474,14 @@ export class EventHandler {
         }
 
         if (p.draggingRoad) {
-            const { x: newX, y: newY } = p.draggingRoad;
+            const snapPos = p.getGridCoords(e.clientX, e.clientY);
+            const newX = snapPos.x;
+            const newY = snapPos.y;
             if (newX >= 0 && newY >= 0 && newX < p.gridWidth && newY < p.gridHeight &&
-                !p.isBuildingAt(newX, newY)
+                p.isCellUnlocked(newX, newY) && !p.isBuildingAt(newX, newY)
             ) {
-                p.roads.delete(`${p.roadDragStart.x},${p.roadDragStart.y}`);
                 p.roads.add(`${newX},${newY}`);
             } else {
-                // 🔥 Restore original if invalid
                 p.roads.add(`${p.roadDragStart.x},${p.roadDragStart.y}`);
             }
             p.draggingRoad = null;
@@ -464,7 +492,9 @@ export class EventHandler {
         }
 
         if (p.draggingWideRoad) {
-            const { x: newX, y: newY } = p.draggingWideRoad;
+            const snapPos = p.getGridCoords(e.clientX, e.clientY);
+            const newX = snapPos.x;
+            const newY = snapPos.y;
             const { x: sx,  y: sy  }  = p.wideRoadDragStart;
             let canPlace = true;
             for (let dy = 0; dy < 2 && canPlace; dy++)
@@ -506,13 +536,18 @@ export class EventHandler {
 
         if (p.draggingBuilding) {
             const b = p.draggingBuilding;
+
+            // Snap to grid from final mouse position
+            const snapPos = p.getGridCoords(e.clientX, e.clientY);
+            b.x = snapPos.x - p.dragOffset.x;
+            b.y = snapPos.y - p.dragOffset.y;
+
             const offGrid =
                 b.x < 0 || b.y < 0 ||
                 b.x + b.width  > p.gridWidth ||
                 b.y + b.height > p.gridHeight;
 
             if (offGrid) {
-                // Send to building pool
                 p.moveToPool(b);
                 p.updateStatus('Building moved to pool');
                 setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);

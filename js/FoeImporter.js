@@ -182,6 +182,16 @@ export class FoeImporter {
                 height = meta.components.AllAge.placement.size.y;
             }
 
+            // Skip predefined game objects outside the player's build zone.
+            // Only applies when we have unlocked-cell data (main city / quantum).
+            if (p.unlockedCells !== null) {
+                let inZone = false;
+                for (let dy = 0; dy < height && !inZone; dy++)
+                    for (let dx = 0; dx < width && !inZone; dx++)
+                        if (p.isCellUnlocked(x + dx, y + dy)) inZone = true;
+                if (!inZone) return;
+            }
+
             const type = entity.type || meta.type || '';
             const name = meta.name || entityId || 'Unknown Building';
 

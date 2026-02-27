@@ -156,22 +156,22 @@ export class Renderer {
                 ctx.stroke();
                 ctx.setLineDash([]);
 
-                // Outer border
+                // Outer border — inset so it stays within the block
                 ctx.strokeStyle = '#444';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(px, py, bw, bh);
+                ctx.lineWidth = 1;
+                ctx.strokeRect(px + 0.5, py + 0.5, bw - 1, bh - 1);
 
-                // Selection highlight
+                // Selection highlight — also inset
                 const isSelectedWide = selectedRoad && this.p._getWideRoadAnchor(
                     ...selectedRoad.split(',').map(Number)
                 ) === roadPos;
                 if (isSelectedWide || selectedRoad === roadPos) {
                     ctx.strokeStyle = '#FFD700';
                     ctx.lineWidth = 3;
-                    ctx.strokeRect(px - 1, py - 1, bw + 2, bh + 2);
+                    ctx.strokeRect(px + 2, py + 2, bw - 4, bh - 4);
                     ctx.shadowColor = '#FFD700';
-                    ctx.shadowBlur = 8;
-                    ctx.strokeRect(px - 1, py - 1, bw + 2, bh + 2);
+                    ctx.shadowBlur = 6;
+                    ctx.strokeRect(px + 2, py + 2, bw - 4, bh - 4);
                     ctx.shadowBlur = 0;
                 }
                 continue;
@@ -190,49 +190,83 @@ export class Renderer {
 
             ctx.strokeStyle = '#555';
             ctx.lineWidth = 1;
-            ctx.strokeRect(px, py, cellSize, cellSize);
+            ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
 
             if (isSelected) {
                 ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(px - 1, py - 1, cellSize + 2, cellSize + 2);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(px + 1.5, py + 1.5, cellSize - 3, cellSize - 3);
                 ctx.shadowColor = '#FFD700';
-                ctx.shadowBlur = 8;
-                ctx.strokeRect(px - 1, py - 1, cellSize + 2, cellSize + 2);
+                ctx.shadowBlur = 6;
+                ctx.strokeRect(px + 1.5, py + 1.5, cellSize - 3, cellSize - 3);
                 ctx.shadowBlur = 0;
             }
         }
 
-        // Draw narrow road drag ghost (road removed from set during drag)
+        // Draw narrow road drag ghost — free pixel position, snap preview on release
         if (this.p.draggingRoad) {
-            const { x, y } = this.p.draggingRoad;
-            const px = x * cellSize;
-            const py = y * cellSize;
-            ctx.globalAlpha = 0.65;
+            const rect = this.p.canvas.getBoundingClientRect();
+            const { panX, panY, zoom, roadDragPixelX, roadDragPixelY } = this.p;
+            const canvasX = (roadDragPixelX - rect.left - panX) / zoom;
+            const canvasY = (roadDragPixelY - rect.top  - panY) / zoom;
+            const snapCX  = Math.floor(canvasX / cellSize);
+            const snapCY  = Math.floor(canvasY / cellSize);
+            const canDrop  = snapCX >= 0 && snapCY >= 0 &&
+                             snapCX < this.p.gridWidth && snapCY < this.p.gridHeight &&
+                             !this.p.isBuildingAt(snapCX, snapCY);
+            // Snap ghost
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = canDrop ? '#00cc44' : '#ff3333';
+            ctx.fillRect(snapCX * cellSize, snapCY * cellSize, cellSize, cellSize);
+            ctx.globalAlpha = 1.0;
+            // Floating ghost centered on cursor
+            const gx = canvasX - cellSize / 2;
+            const gy = canvasY - cellSize / 2;
+            ctx.globalAlpha = 0.75;
             ctx.fillStyle = CONSTANTS.COLORS.ROAD;
-            ctx.fillRect(px, py, cellSize, cellSize);
-            ctx.strokeStyle = '#00cc44';
+            ctx.fillRect(gx, gy, cellSize, cellSize);
+            ctx.strokeStyle = canDrop ? '#00cc44' : '#ff3333';
             ctx.lineWidth = 2;
             ctx.setLineDash([4, 3]);
-            ctx.strokeRect(px, py, cellSize, cellSize);
+            ctx.strokeRect(gx, gy, cellSize, cellSize);
             ctx.setLineDash([]);
             ctx.globalAlpha = 1.0;
         }
 
-        // Draw wide road drag ghost (removed from sets during drag)
+        // Draw wide road drag ghost — free pixel position, snap preview on release
         if (this.p.draggingWideRoad) {
-            const { x, y } = this.p.draggingWideRoad;
-            const px = x * cellSize;
-            const py = y * cellSize;
+            const rect = this.p.canvas.getBoundingClientRect();
+            const { panX, panY, zoom, wideRoadDragPixelX, wideRoadDragPixelY } = this.p;
+            const canvasX = (wideRoadDragPixelX - rect.left - panX) / zoom;
+            const canvasY = (wideRoadDragPixelY - rect.top  - panY) / zoom;
+            const snapCX  = Math.floor(canvasX / cellSize);
+            const snapCY  = Math.floor(canvasY / cellSize);
             const bw = cellSize * 2;
             const bh = cellSize * 2;
-            ctx.globalAlpha = 0.65;
+            let canDrop = snapCX >= 0 && snapCY >= 0 &&
+                          snapCX + 1 < this.p.gridWidth && snapCY + 1 < this.p.gridHeight;
+            if (canDrop) {
+                for (let dy = 0; dy < 2 && canDrop; dy++)
+                    for (let dx = 0; dx < 2 && canDrop; dx++)
+                        if (!this.p.isCellUnlocked(snapCX + dx, snapCY + dy) ||
+                            this.p.isBuildingAt(snapCX + dx, snapCY + dy))
+                            canDrop = false;
+            }
+            // Snap ghost
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = canDrop ? '#00cc44' : '#ff3333';
+            ctx.fillRect(snapCX * cellSize, snapCY * cellSize, bw, bh);
+            ctx.globalAlpha = 1.0;
+            // Floating ghost centered on cursor (offset by 1 cell so block is centered)
+            const gx = canvasX - cellSize;
+            const gy = canvasY - cellSize;
+            ctx.globalAlpha = 0.75;
             ctx.fillStyle = CONSTANTS.COLORS.WIDE_ROAD || '#6b6b6b';
-            ctx.fillRect(px, py, bw, bh);
-            ctx.strokeStyle = '#00cc44';
+            ctx.fillRect(gx, gy, bw, bh);
+            ctx.strokeStyle = canDrop ? '#00cc44' : '#ff3333';
             ctx.lineWidth = 2;
             ctx.setLineDash([4, 3]);
-            ctx.strokeRect(px, py, bw, bh);
+            ctx.strokeRect(gx, gy, bw, bh);
             ctx.setLineDash([]);
             ctx.globalAlpha = 1.0;
         }
@@ -258,8 +292,6 @@ export class Renderer {
         const isExpiry = renderMode === 'expiry';
 
         for (const building of buildings) {
-            const x = building.x * cellSize;
-            const y = building.y * cellSize;
             const w = building.width  * cellSize;
             const h = building.height * cellSize;
 
@@ -271,7 +303,28 @@ export class Renderer {
                 ? Renderer.expiryColor(building.expiration).color
                 : (this.isDark ? (CONSTANTS.DARK_COLORS[building.type] || building.color) : building.color);
 
-            if (isDragging) ctx.globalAlpha = 0.6;
+            // Free-drag: follow cursor in pixel space, snap only on release
+            let x = building.x * cellSize;
+            let y = building.y * cellSize;
+            if (isDragging) {
+                const rect = this.p.canvas.getBoundingClientRect();
+                const { panX, panY, zoom, dragPixelX, dragPixelY, dragOffset } = this.p;
+                x = (dragPixelX - rect.left - panX) / zoom - dragOffset.x * cellSize;
+                y = (dragPixelY - rect.top  - panY) / zoom - dragOffset.y * cellSize;
+
+                // Faint snap ghost so the user can see where it will land
+                const snapGX = Math.floor((dragPixelX - rect.left - panX) / zoom / cellSize) - dragOffset.x;
+                const snapGY = Math.floor((dragPixelY - rect.top  - panY) / zoom / cellSize) - dragOffset.y;
+                const snapX = snapGX * cellSize;
+                const snapY = snapGY * cellSize;
+                const canDrop = this.p.canPlaceBuilding(snapGX, snapGY, building.width, building.height, building);
+                ctx.globalAlpha = 0.25;
+                ctx.fillStyle = canDrop ? '#00cc44' : '#ff3333';
+                ctx.fillRect(snapX, snapY, w, h);
+                ctx.globalAlpha = 1.0;
+            }
+
+            if (isDragging) ctx.globalAlpha = 0.75;
 
             if (isRoadless && !isDragging && !isExpiry) {
                 this.drawRoadlessBuilding(x, y, w, h, fillColor);
@@ -280,35 +333,36 @@ export class Renderer {
                 ctx.fillRect(x, y, w, h);
             }
 
+            // All borders inset so they never bleed onto neighbouring cells
             if (isRoadless && !isExpiry) {
                 ctx.strokeStyle = '#2E7D32';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.setLineDash([8, 4]);
-                ctx.strokeRect(x, y, w, h);
+                ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
                 ctx.setLineDash([]);
             } else {
                 ctx.strokeStyle = isExpiry
-                    ? 'rgba(0,0,0,0.4)'
-                    : (this.isDark ? 'rgba(255,255,255,0.25)' : '#000');
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, w, h);
+                    ? 'rgba(0,0,0,0.35)'
+                    : (this.isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.45)');
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
             }
 
             if (isSelected && !isDragging) {
                 ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
                 ctx.shadowColor = '#FFD700';
-                ctx.shadowBlur = 10;
-                ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+                ctx.shadowBlur = 8;
+                ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
                 ctx.shadowBlur = 0;
             }
 
             if (isDragging) {
                 ctx.strokeStyle = '#00FF00';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.setLineDash([8, 4]);
-                ctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
+                ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
                 ctx.setLineDash([]);
             }
 

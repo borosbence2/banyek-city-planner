@@ -56,11 +56,17 @@ export class CityPlanner {
         this.draggingBuilding = null;
         this.dragOffset       = { x: 0, y: 0 };
         this.dragStartPos     = { x: 0, y: 0 };
+        this.dragPixelX       = 0;
+        this.dragPixelY       = 0;
         this.hoverPos         = null;
         this.draggingRoad      = null;
         this.roadDragStart     = null;
+        this.roadDragPixelX    = 0;
+        this.roadDragPixelY    = 0;
         this.draggingWideRoad  = null;
         this.wideRoadDragStart = null;
+        this.wideRoadDragPixelX = 0;
+        this.wideRoadDragPixelY = 0;
         this._poolDragTemplate = null;
 
         // UI state
@@ -136,6 +142,7 @@ export class CityPlanner {
      */
     placeWideRoad(gridPos) {
         const { x, y } = gridPos;
+        if (x < 0 || y < 0 || x + 1 >= this.gridWidth || y + 1 >= this.gridHeight) return;
         // Check all 4 cells are unlocked and not occupied by buildings
         for (let dy = 0; dy < 2; dy++) {
             for (let dx = 0; dx < 2; dx++) {
@@ -370,6 +377,7 @@ export class CityPlanner {
 
     placeRoad(gridPos) {
         const { x, y } = gridPos;
+        if (x < 0 || y < 0 || x >= this.gridWidth || y >= this.gridHeight) return;
         if (this.isCellUnlocked(x, y) && !this.isBuildingAt(x, y)) {
             this.roads.add(`${x},${y}`);
             this.renderer.draw();
@@ -1614,6 +1622,8 @@ export class CityPlanner {
             this.unlockedAreas = snap.unlockedAreas || [];
             this.buildingPool  = snap.buildingPool  || [];
             this.cityMetadata  = snap.cityMetadata  || null;
+            this.gridWidth     = snap.gridWidth     || CONSTANTS.DEFAULT_GRID_SIZE;
+            this.gridHeight    = snap.gridHeight    || CONSTANTS.DEFAULT_GRID_SIZE;
             this.gridOffsetX   = 0;
             this.gridOffsetY   = 0;
             // Ensure a townhall is always present (handles saves predating this feature)
