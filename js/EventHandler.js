@@ -11,10 +11,10 @@ export class EventHandler {
     setup() {
         const p = this.p;
 
-        // Tabs
-        document.querySelectorAll('.tab').forEach(tab =>
+        // Building type filter buttons
+        document.querySelectorAll('.type-btn').forEach(tab =>
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.type-btn').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 p.currentTab = tab.dataset.tab;
                 p.updateBuildingList();
@@ -75,6 +75,8 @@ export class EventHandler {
         // Tools
         document.getElementById('roadBtn')
             .addEventListener('click', () => p.enterRoadPlacement());
+        document.getElementById('wideRoadBtn')
+            .addEventListener('click', () => p.enterWideRoadPlacement());
         document.getElementById('addExpansionBtn')
             .addEventListener('click', () => p.addExpansion());
 
@@ -233,8 +235,8 @@ export class EventHandler {
             }
 
             else if (p.selectedRoad) {
-                p.roads.delete(p.selectedRoad);
-                p.selectedRoad = null;
+                const [rx, ry] = p.selectedRoad.split(',').map(Number);
+                p.removeRoadAt(rx, ry); // handles both narrow and wide roads
             }
 
             p.updateSelectionBanner();
@@ -246,10 +248,13 @@ export class EventHandler {
             p.selectedTemplate = null;
             p.placingRoad = false;
             p.isPaintingRoad = false;
+            p.placingWideRoad = false;
+            p.isPaintingWideRoad = false;
             p.placingExpansion = false;
             p.hoverPos = null;
 
             p._clearActiveBuildingBtn();
+            p._setActiveToolBtn(null);
             p.hideModeBanner();
 
             p.updateStatus('Mode: Select/Move');
@@ -300,6 +305,13 @@ export class EventHandler {
             return;
         }
 
+        // Wide road placement
+        if (p.placingWideRoad) {
+            p.isPaintingWideRoad = true;
+            p.placeWideRoad(gridPos);
+            return;
+        }
+
         // Expansion placement
         if (p.placingExpansion) {
             p.placeExpansionAt(gridPos);
@@ -331,14 +343,28 @@ export class EventHandler {
             return;
         }
 
-        // Check if clicking on any road — select it and start dragging immediately
+        // Check if clicking on any road — select and start drag
         const roadKey = `${gridPos.x},${gridPos.y}`;
         if (p.roads.has(roadKey)) {
             p.selectedBuilding = null;
-            p.selectedRoad = roadKey;
-            p.draggingRoad  = { x: gridPos.x, y: gridPos.y };
-            p.roadDragStart = { x: gridPos.x, y: gridPos.y };
-            p.roads.delete(roadKey);
+            const wideAnchor = p._getWideRoadAnchor(gridPos.x, gridPos.y);
+            if (wideAnchor) {
+                const [ax, ay] = wideAnchor.split(',').map(Number);
+                p.selectedRoad = wideAnchor;
+                // Remove from sets for the duration of the drag
+                p.wideRoads.delete(wideAnchor);
+                for (let dy = 0; dy < 2; dy++)
+                    for (let dx = 0; dx < 2; dx++)
+                        p.roads.delete(`${ax + dx},${ay + dy}`);
+                p.draggingWideRoad  = { x: ax, y: ay };
+                p.wideRoadDragStart = { x: ax, y: ay };
+            } else {
+                // Narrow road drag
+                p.selectedRoad  = roadKey;
+                p.draggingRoad  = { x: gridPos.x, y: gridPos.y };
+                p.roadDragStart = { x: gridPos.x, y: gridPos.y };
+                p.roads.delete(roadKey);
+            }
             p.updateSelectionBanner();
             p.renderer.draw();
             return;
@@ -354,6 +380,15 @@ export class EventHandler {
             const gridPos = p.getGridCoords(e.clientX, e.clientY);
             p.draggingRoad.x = gridPos.x;
             p.draggingRoad.y = gridPos.y;
+            p.renderer.draw();
+            this._hideTooltip();
+            return;
+        }
+
+        if (p.draggingWideRoad) {
+            const gridPos = p.getGridCoords(e.clientX, e.clientY);
+            p.draggingWideRoad.x = gridPos.x;
+            p.draggingWideRoad.y = gridPos.y;
             p.renderer.draw();
             this._hideTooltip();
             return;
@@ -375,9 +410,15 @@ export class EventHandler {
             return;
         }
 
+        if (p.placingWideRoad && p.isPaintingWideRoad) {
+            const gridPos = p.getGridCoords(e.clientX, e.clientY);
+            p.placeWideRoad(gridPos);
+            return;
+        }
+
         const gridPos = p.getGridCoords(e.clientX, e.clientY);
 
-        if (p.selectedTemplate || p.placingExpansion) {
+        if (p.selectedTemplate || p.placingExpansion || p.placingWideRoad) {
             p.hoverPos = gridPos;
             p.renderer.draw();
         }
@@ -422,8 +463,44 @@ export class EventHandler {
             return;
         }
 
+        if (p.draggingWideRoad) {
+            const { x: newX, y: newY } = p.draggingWideRoad;
+            const { x: sx,  y: sy  }  = p.wideRoadDragStart;
+            let canPlace = true;
+            for (let dy = 0; dy < 2 && canPlace; dy++)
+                for (let dx = 0; dx < 2 && canPlace; dx++)
+                    if (!p.isCellUnlocked(newX + dx, newY + dy) || p.isBuildingAt(newX + dx, newY + dy))
+                        canPlace = false;
+            const newAnchor = `${newX},${newY}`;
+            if (canPlace && !p.wideRoads.has(newAnchor)) {
+                p.wideRoads.add(newAnchor);
+                for (let dy = 0; dy < 2; dy++)
+                    for (let dx = 0; dx < 2; dx++)
+                        p.roads.add(`${newX + dx},${newY + dy}`);
+                p.selectedRoad = newAnchor;
+            } else {
+                // Restore original position
+                const origAnchor = `${sx},${sy}`;
+                p.wideRoads.add(origAnchor);
+                for (let dy = 0; dy < 2; dy++)
+                    for (let dx = 0; dx < 2; dx++)
+                        p.roads.add(`${sx + dx},${sy + dy}`);
+                p.selectedRoad = origAnchor;
+            }
+            p.draggingWideRoad  = null;
+            p.wideRoadDragStart = null;
+            p.canvas.style.cursor = 'default';
+            p.renderer.draw();
+            return;
+        }
+
         if (p.isPaintingRoad) {
             p.isPaintingRoad = false;
+            return;
+        }
+
+        if (p.isPaintingWideRoad) {
+            p.isPaintingWideRoad = false;
             return;
         }
 
@@ -456,6 +533,25 @@ export class EventHandler {
         const p = this.p;
         p.isPanning = false;
         p.hoverPos  = null;
+
+        // Restore roads if dragged off-canvas
+        if (p.draggingRoad) {
+            p.roads.add(`${p.roadDragStart.x},${p.roadDragStart.y}`);
+            p.draggingRoad  = null;
+            p.roadDragStart = null;
+        }
+        if (p.draggingWideRoad) {
+            const { x: sx, y: sy } = p.wideRoadDragStart;
+            const origAnchor = `${sx},${sy}`;
+            p.wideRoads.add(origAnchor);
+            for (let dy = 0; dy < 2; dy++)
+                for (let dx = 0; dx < 2; dx++)
+                    p.roads.add(`${sx + dx},${sy + dy}`);
+            p.selectedRoad      = origAnchor;
+            p.draggingWideRoad  = null;
+            p.wideRoadDragStart = null;
+        }
+
         p.renderer.draw();
         this._hideTooltip();
     }

@@ -22,18 +22,35 @@
                 <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
             </div>
 
-            <div class="section collapsible-section">
-                <h2 class="section-header" data-toggle="fileContent">
-                    File <span class="section-arrow">▼</span>
-                </h2>
-                <div class="section-content" id="fileContent" style="display:block;">
-                    <button class="btn success" id="importFoeBtn">📥 Import from FoE Helper</button>
-                    <button class="btn" id="importEfficiencyBtn">📋 Import Efficiency Rating</button>
-                    <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
-                    <label class="efficiency-pertile-label" title="Check this if you exported from FoE Helper with the 'Value/tile' checkbox enabled (default). Uncheck if you exported without it.">
-                        <input type="checkbox" id="efficiencyPerTile" checked>
-                        &nbsp;Export was per-tile (Value/tile checked)
+            <div class="status" id="status">Mode: Select</div>
+
+            <div class="city-info" id="cityInfo" style="display:none;">
+                <strong>Imported City Info:</strong><br>
+                <span id="cityInfoText"></span>
+            </div>
+
+            <!-- Production overview — promoted to always visible -->
+            <button class="btn prod-btn" id="prodOverviewBtn">📊 Production Overview</button>
+
+            <!-- Import — always visible -->
+            <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
+            <div class="import-group">
+                <div class="import-group-label">📥 Import</div>
+                <button class="btn success import-main-btn" id="importFoeBtn">Import from FoE Helper</button>
+                <div class="efficiency-row">
+                    <button class="btn" id="importEfficiencyBtn">📋 Efficiency Rating</button>
+                    <label class="efficiency-tile-check" title="Check if exported with 'Value/tile' enabled">
+                        <input type="checkbox" id="efficiencyPerTile" checked> per-tile
                     </label>
+                </div>
+            </div>
+
+            <!-- Save / Export — collapsed by default -->
+            <div class="section collapsible-section">
+                <h2 class="section-header collapsed" data-toggle="fileContent">
+                    💾 Save / Export <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="fileContent" style="display:none;">
                     <div class="file-btn-grid">
                         <button class="btn" id="saveBtn">💾 Save</button>
                         <button class="btn" id="loadBtn">📂 Load</button>
@@ -42,13 +59,6 @@
                     </div>
                     <button class="btn danger" id="clearBtn">🗑 Clear All</button>
                 </div><!-- /.section-content -->
-            </div>
-
-            <div class="status" id="status">Mode: Select</div>
-
-            <div class="city-info" id="cityInfo" style="display:none;">
-                <strong>Imported City Info:</strong><br>
-                <span id="cityInfoText"></span>
             </div>
 
             <!-- Placeholder shown for non-main city modes -->
@@ -60,36 +70,34 @@
             </div>
 
             <div id="buildingSection" class="section collapsible-section">
-                <h2 class="section-header" data-toggle="buildingContent">Buildings <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header" data-toggle="buildingContent">🏗 Buildings <span class="section-arrow">▼</span></h2>
                 <div class="section-content" id="buildingContent">
-                <div class="building-toolbar">
-                    <button class="btn-small" id="roadBtn">+ Road</button>
-                    <button class="btn-small" id="addExpansionBtn">+ Expansion</button>
-                    <button class="btn-small" id="addBuildingBtn">+ Custom</button>
-                </div>
-
-                <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
-
-                <div class="tab-container">
-                    <div class="tabs">
-                        <button class="tab active" data-tab="all">All</button>
-                        <button class="tab" data-tab="residential">Residential</button>
-                        <button class="tab" data-tab="production">Production</button>
-                        <button class="tab" data-tab="goods">Goods</button>
-                        <button class="tab" data-tab="culture">Culture</button>
-                        <button class="tab" data-tab="military">Military</button>
-                        <button class="tab" data-tab="great">Great Buildings</button>
-                        <button class="tab" data-tab="event">Events</button>
+                    <!-- Placement tools -->
+                    <div class="tools-bar">
+                        <button class="tool-btn" id="roadBtn" title="Paint 1×1 roads">+ Road</button>
+                        <button class="tool-btn" id="wideRoadBtn" title="Paint 2×2 wide roads">+ Wide Road</button>
+                        <button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
+                        <button class="tool-btn" id="addBuildingBtn" title="Add a custom building">+ Custom Building</button>
                     </div>
-                </div>
 
-                <div class="building-list" id="buildingList"></div>
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
+                    <div class="type-filter-grid">
+                        <button class="type-btn active" data-tab="all">All</button>
+                        <button class="type-btn" data-tab="residential">🏘<br>Res</button>
+                        <button class="type-btn" data-tab="production">🏭<br>Prod</button>
+                        <button class="type-btn" data-tab="goods">📦<br>Goods</button>
+                        <button class="type-btn" data-tab="culture">🎭<br>Cult</button>
+                        <button class="type-btn" data-tab="military">⚔<br>Mil</button>
+                        <button class="type-btn" data-tab="great">🏛<br>GB</button>
+                        <button class="type-btn" data-tab="event">✨<br>Event</button>
+                    </div>
+                    <div class="building-list" id="buildingList"></div>
                 </div><!-- /.section-content -->
             </div><!-- /#buildingSection -->
 
             <div class="section collapsible-section">
                 <h2 class="section-header collapsed" data-toggle="optimizeContent">
-                    Optimize <span class="section-arrow">▼</span>
+                    ⚡ Optimize <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content" id="optimizeContent" style="display:none;">
                     <button class="btn warning" id="optimizeBtn" disabled>
@@ -108,62 +116,60 @@
             </div>
 
             <div class="section collapsible-section">
-                <h2 class="section-header" data-toggle="viewContent">View <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header" data-toggle="viewContent">👁 View <span class="section-arrow">▼</span></h2>
                 <div class="section-content" id="viewContent">
-                <div class="view-toolbar">
-                    <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
-                    <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
-                    <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
-                </div>
-                <p class="view-hint">💡 Scroll to zoom · Right-drag to pan</p>
-
-                <div id="mapModeSection">
-                    <div class="section-sublabel">🗺️ Map Mode</div>
-                    <div style="display:flex;gap:4px;margin-bottom:10px;">
-                        <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;">Normal</button>
-                        <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;">⚡ Activity</button>
+                    <div class="view-toolbar">
+                        <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
+                        <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
+                        <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
                     </div>
-                </div>
+                    <p class="view-hint">💡 Scroll to zoom · Right-drag to pan</p>
 
-                <div class="section-sublabel">🎨 Color Legend</div>
-                <div id="colorLegend" data-mode="normal" style="font-size:10px;line-height:1.6;">
-                    <!-- Normal legend -->
-                    <div class="legend-normal">
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#87CEEB;border:1px solid #999;margin-right:6px;"></span><span>Residential 🏘️</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#5F8DC3;border:1px solid #999;margin-right:6px;"></span><span>Production 🏭</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#F4E16B;border:1px solid #999;margin-right:6px;"></span><span>Goods 📦</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6B8E7F;border:1px solid #999;margin-right:6px;"></span><span>Culture / Decorations 🎭</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#8B7BAA;border:1px solid #999;margin-right:6px;"></span><span>Military ⚔️</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D46A4F;border:1px solid #999;margin-right:6px;"></span><span>Great Buildings 🏛️</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E8D679;border:1px solid #999;margin-right:6px;"></span><span>Town Hall 🏛️</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D4884B;border:1px solid #999;margin-right:6px;"></span><span>Event Buildings ✨</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#808080;border:1px solid #999;margin-right:6px;"></span><span>Roads 🛣️</span></div>
-                        <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
-                            💡 Colors match FoE Helper<br>
-                            ✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.
+                    <div id="mapModeSection">
+                        <div class="section-sublabel">🗺️ Map Mode</div>
+                        <div style="display:flex;gap:4px;margin-bottom:10px;">
+                            <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;">Normal</button>
+                            <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;">⚡ Activity</button>
                         </div>
                     </div>
-                    <!-- Activity / evolved-state legend -->
-                    <div class="legend-expiry" style="display:none;">
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#37474F;border:1px solid #999;margin-right:6px;"></span><span>Inactive (upgrade ended)</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF1744;border:1px solid #999;margin-right:6px;"></span><span>⚠ Expires in &lt; 24 hours</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#EF5350;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 7 days</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF8F00;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 30 days</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#66BB6A;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 90 days</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#2E7D32;border:1px solid #999;margin-right:6px;"></span><span>Active &gt; 90 days</span></div>
-                        <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>Always active / permanent</span></div>
-                        <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
-                            ⚡ Shows evolved/upgraded building activity.<br>
-                            Hover a building to see exact end date.
+
+                    <h3 class="section-header legend-toggle" data-toggle="colorLegendContent">
+                        🎨 Color Legend <span class="section-arrow">▼</span>
+                    </h3>
+                    <div id="colorLegendContent">
+                        <div id="colorLegend" data-mode="normal" style="font-size:10px;line-height:1.6;">
+                            <div class="legend-normal">
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#87CEEB;border:1px solid #999;margin-right:6px;"></span><span>Residential 🏘️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#5F8DC3;border:1px solid #999;margin-right:6px;"></span><span>Production 🏭</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#F4E16B;border:1px solid #999;margin-right:6px;"></span><span>Goods 📦</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6B8E7F;border:1px solid #999;margin-right:6px;"></span><span>Culture / Decorations 🎭</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#8B7BAA;border:1px solid #999;margin-right:6px;"></span><span>Military ⚔️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D46A4F;border:1px solid #999;margin-right:6px;"></span><span>Great Buildings 🏛️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E8D679;border:1px solid #999;margin-right:6px;"></span><span>Town Hall 🏛️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D4884B;border:1px solid #999;margin-right:6px;"></span><span>Event Buildings ✨</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#808080;border:1px solid #999;margin-right:6px;"></span><span>Roads 🛣️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6b6b6b;border:1px solid #999;margin-right:6px;"></span><span>Wide Roads (2×2) 🛤️</span></div>
+                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
+                                    💡 Colors match FoE Helper<br>
+                                    ✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.
+                                </div>
+                            </div>
+                            <div class="legend-expiry" style="display:none;">
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#37474F;border:1px solid #999;margin-right:6px;"></span><span>Inactive (upgrade ended)</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF1744;border:1px solid #999;margin-right:6px;"></span><span>⚠ Expires in &lt; 24 hours</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#EF5350;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 7 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF8F00;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 30 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#66BB6A;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 90 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#2E7D32;border:1px solid #999;margin-right:6px;"></span><span>Active &gt; 90 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>Always active / permanent</span></div>
+                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
+                                    ⚡ Shows evolved/upgraded building activity.<br>
+                                    Hover a building to see exact end date.
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
                 </div><!-- /.section-content -->
-            </div>
-
-            <div class="section">
-                <h2>Production</h2>
-                <button class="btn" id="prodOverviewBtn">📊 Production Overview</button>
             </div>
 
         </div>

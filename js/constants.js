@@ -31,7 +31,20 @@ export const CONSTANTS = {
         TOWN_HALL:      '#E8D679',
         EVENT:          '#D4884B',
         ROAD:           '#808080',
+        WIDE_ROAD:      '#6b6b6b',
         ROADLESS:       '#6B8E7F',
+    },
+
+    // Dark-mode building color palette (vivid but not harsh on dark canvas)
+    DARK_COLORS: {
+        residential:    '#1E88E5',
+        production:     '#0097A7',
+        goods:          '#FFA000',
+        culture:        '#43A047',
+        military:       '#8E24AA',
+        great:          '#F4511E',
+        townhall:       '#FFB300',
+        event:          '#FB8C00',
     },
 
     // Optimizer settings

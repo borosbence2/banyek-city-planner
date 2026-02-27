@@ -7,10 +7,12 @@ export class Renderer {
 
     get ctx() { return this.p.ctx; }
 
+    get isDark() { return document.body.classList.contains('dark'); }
+
     draw() {
         const { ctx, canvas, panX, panY, zoom } = this.p;
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = this.isDark ? '#12121e' : '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
@@ -39,13 +41,19 @@ export class Renderer {
             return;
         }
         const gradient = ctx.createLinearGradient(ox, oy, ox + w, oy + h);
-        gradient.addColorStop(0,   '#F5F7FA');
-        gradient.addColorStop(0.5, '#E8EDF2');
-        gradient.addColorStop(1,   '#F5F7FA');
+        if (this.isDark) {
+            gradient.addColorStop(0,   '#1a1d2e');
+            gradient.addColorStop(0.5, '#161928');
+            gradient.addColorStop(1,   '#1a1d2e');
+        } else {
+            gradient.addColorStop(0,   '#F5F7FA');
+            gradient.addColorStop(0.5, '#E8EDF2');
+            gradient.addColorStop(1,   '#F5F7FA');
+        }
         ctx.fillStyle = gradient;
         ctx.fillRect(ox, oy, w, h);
 
-        ctx.fillStyle = 'rgba(150, 150, 150, 0.08)';
+        ctx.fillStyle = this.isDark ? 'rgba(255,255,255,0.03)' : 'rgba(150, 150, 150, 0.08)';
         for (let x = gridOffsetX; x < gridOffsetX + gridWidth; x++) {
             for (let y = gridOffsetY; y < gridOffsetY + gridHeight; y++) {
                 if ((x + y) % 2 === 0) {
@@ -68,7 +76,7 @@ export class Renderer {
 
         // Shade locked cells dark so the non-rectangular city shape is visible.
         if (unlockedCells) {
-            ctx.fillStyle = 'rgba(40, 40, 40, 0.55)';
+            ctx.fillStyle = this.isDark ? 'rgba(0,0,0,0.65)' : 'rgba(40,40,40,0.55)';
             for (let cy = gridOffsetY; cy < gridOffsetY + gridHeight; cy++) {
                 for (let cx = gridOffsetX; cx < gridOffsetX + gridWidth; cx++) {
                     if (!unlockedCells.has(`${cx},${cy}`)) {
@@ -78,7 +86,9 @@ export class Renderer {
             }
         }
 
-        ctx.strokeStyle = unlockedCells ? 'rgba(180,180,180,0.4)' : '#e0e0e0';
+        ctx.strokeStyle = this.isDark
+            ? (unlockedCells ? 'rgba(100,100,160,0.35)' : 'rgba(80,80,120,0.5)')
+            : (unlockedCells ? 'rgba(180,180,180,0.4)'  : '#e0e0e0');
         ctx.lineWidth = 1;
 
         for (let i = 0; i <= gridWidth; i++) {
@@ -116,10 +126,61 @@ export class Renderer {
     }
 
     drawRoads() {
-        const { ctx, roads, cellSize, mode, hoverPos, draggingRoad, selectedRoad } = this.p;
+        const { ctx, roads, wideRoads, cellSize, hoverPos, selectedRoad } = this.p;
 
         for (const roadPos of roads) {
             const [x, y] = roadPos.split(',').map(Number);
+
+            // Wide road: only draw from the anchor cell to avoid duplicate draws
+            if (wideRoads.has(roadPos)) {
+                // This IS the anchor — draw a 2×2 block
+                const px = x * cellSize;
+                const py = y * cellSize;
+                const bw = cellSize * 2;
+                const bh = cellSize * 2;
+
+                ctx.fillStyle = CONSTANTS.COLORS.WIDE_ROAD || '#6b6b6b';
+                ctx.fillRect(px, py, bw, bh);
+
+                // Inner lane lines
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.moveTo(px + bw / 2, py);
+                ctx.lineTo(px + bw / 2, py + bh);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(px, py + bh / 2);
+                ctx.lineTo(px + bw, py + bh / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Outer border
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(px, py, bw, bh);
+
+                // Selection highlight
+                const isSelectedWide = selectedRoad && this.p._getWideRoadAnchor(
+                    ...selectedRoad.split(',').map(Number)
+                ) === roadPos;
+                if (isSelectedWide || selectedRoad === roadPos) {
+                    ctx.strokeStyle = '#FFD700';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(px - 1, py - 1, bw + 2, bh + 2);
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 8;
+                    ctx.strokeRect(px - 1, py - 1, bw + 2, bh + 2);
+                    ctx.shadowBlur = 0;
+                }
+                continue;
+            }
+
+            // Skip non-anchor cells that belong to a wide road (already drawn above)
+            if (this.p._getWideRoadAnchor(x, y) !== null) continue;
+
+            // Normal 1×1 road
             const px = x * cellSize;
             const py = y * cellSize;
             const isSelected = roadPos === selectedRoad;
@@ -140,24 +201,40 @@ export class Renderer {
                 ctx.strokeRect(px - 1, py - 1, cellSize + 2, cellSize + 2);
                 ctx.shadowBlur = 0;
             }
-
-            if (mode === 'delete' && hoverPos && hoverPos.x === x && hoverPos.y === y) {
-                ctx.strokeStyle = '#FF0000';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(px, py, cellSize, cellSize);
-            }
         }
 
-        if (draggingRoad) {
-            const dx = draggingRoad.x * cellSize;
-            const dy = draggingRoad.y * cellSize;
-            ctx.globalAlpha = 0.6;
+        // Draw narrow road drag ghost (road removed from set during drag)
+        if (this.p.draggingRoad) {
+            const { x, y } = this.p.draggingRoad;
+            const px = x * cellSize;
+            const py = y * cellSize;
+            ctx.globalAlpha = 0.65;
             ctx.fillStyle = CONSTANTS.COLORS.ROAD;
-            ctx.fillRect(dx, dy, cellSize, cellSize);
-            ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = '#00FF00';
+            ctx.fillRect(px, py, cellSize, cellSize);
+            ctx.strokeStyle = '#00cc44';
             ctx.lineWidth = 2;
-            ctx.strokeRect(dx, dy, cellSize, cellSize);
+            ctx.setLineDash([4, 3]);
+            ctx.strokeRect(px, py, cellSize, cellSize);
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Draw wide road drag ghost (removed from sets during drag)
+        if (this.p.draggingWideRoad) {
+            const { x, y } = this.p.draggingWideRoad;
+            const px = x * cellSize;
+            const py = y * cellSize;
+            const bw = cellSize * 2;
+            const bh = cellSize * 2;
+            ctx.globalAlpha = 0.65;
+            ctx.fillStyle = CONSTANTS.COLORS.WIDE_ROAD || '#6b6b6b';
+            ctx.fillRect(px, py, bw, bh);
+            ctx.strokeStyle = '#00cc44';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 3]);
+            ctx.strokeRect(px, py, bw, bh);
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -192,7 +269,7 @@ export class Renderer {
 
             const fillColor = isExpiry
                 ? Renderer.expiryColor(building.expiration).color
-                : building.color;
+                : (this.isDark ? (CONSTANTS.DARK_COLORS[building.type] || building.color) : building.color);
 
             if (isDragging) ctx.globalAlpha = 0.6;
 
@@ -210,7 +287,9 @@ export class Renderer {
                 ctx.strokeRect(x, y, w, h);
                 ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = isExpiry ? 'rgba(0,0,0,0.4)' : '#000';
+                ctx.strokeStyle = isExpiry
+                    ? 'rgba(0,0,0,0.4)'
+                    : (this.isDark ? 'rgba(255,255,255,0.25)' : '#000');
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, y, w, h);
             }
@@ -270,7 +349,13 @@ export class Renderer {
 
     drawBuildingText(building, x, y, w, h) {
         const { ctx } = this.p;
-        ctx.fillStyle = '#000';
+        if (this.isDark) {
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 3;
+        } else {
+            ctx.fillStyle = '#000';
+        }
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -294,6 +379,7 @@ export class Renderer {
         const lineHeight = 12;
         const startY = y + h / 2 - (lines.length - 1) * lineHeight / 2;
         lines.forEach((line, i) => ctx.fillText(line, x + w / 2, startY + i * lineHeight));
+        ctx.shadowBlur = 0;
     }
 
     drawPlacementCrosshair() {
@@ -348,6 +434,21 @@ export class Renderer {
             ctx.strokeStyle = '#2196F3';
             ctx.lineWidth = 2;
             ctx.strokeRect(x * cellSize, y * cellSize, EXPANSION_SIZE * cellSize, EXPANSION_SIZE * cellSize);
+            return;
+        }
+
+        // Wide road placement ghost
+        if (this.p.placingWideRoad && hoverPos) {
+            const { x, y } = hoverPos;
+            const bw = cellSize * 2;
+            const bh = cellSize * 2;
+            const px = x * cellSize;
+            const py = y * cellSize;
+            ctx.fillStyle = 'rgba(107, 107, 107, 0.35)';
+            ctx.fillRect(px, py, bw, bh);
+            ctx.strokeStyle = '#6b6b6b';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(px, py, bw, bh);
             return;
         }
 

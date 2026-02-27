@@ -38,14 +38,17 @@ export class CityPlanner {
         // City state
         this.buildings     = [];
         this.roads         = new Set();
+        this.wideRoads     = new Set(); // anchors ("x,y") of 2×2 CarStreet road blocks
         this.unlockedAreas = [];
         this.unlockedCells = null; // Set of "x,y" strings, or null when whole grid is open
         this.cityMetadata  = null;
         this.buildingPool  = [];
 
         // Interaction state
-        this.placingRoad = false;
-        this.isPaintingRoad = false;
+        this.placingRoad      = false;
+        this.isPaintingRoad   = false;
+        this.placingWideRoad  = false;
+        this.isPaintingWideRoad = false;
         this.placingExpansion = false;
         this.selectedTemplate = null;
         this.selectedBuilding = null;
@@ -54,8 +57,10 @@ export class CityPlanner {
         this.dragOffset       = { x: 0, y: 0 };
         this.dragStartPos     = { x: 0, y: 0 };
         this.hoverPos         = null;
-        this.draggingRoad     = null;
-        this.roadDragStart    = null;
+        this.draggingRoad      = null;
+        this.roadDragStart     = null;
+        this.draggingWideRoad  = null;
+        this.wideRoadDragStart = null;
         this._poolDragTemplate = null;
 
         // UI state
@@ -84,10 +89,14 @@ export class CityPlanner {
     // ========================================
     enterRoadPlacement() {
         this.placingRoad = true;
+        this.placingWideRoad = false;
+        this.isPaintingRoad = false;
+        this.isPaintingWideRoad = false;
         this.selectedTemplate = null;
         this.selectedBuilding = null;
         this.selectedRoad = null;
         this._clearActiveBuildingBtn();
+        this._setActiveToolBtn('roadBtn');
 
         this.updateStatus('Road placement active');
 
@@ -97,13 +106,97 @@ export class CityPlanner {
         `);
     }
 
+    enterWideRoadPlacement() {
+        this.placingWideRoad = true;
+        this.placingRoad = false;
+        this.isPaintingRoad = false;
+        this.isPaintingWideRoad = false;
+        this.selectedTemplate = null;
+        this.selectedBuilding = null;
+        this.selectedRoad = null;
+        this._clearActiveBuildingBtn();
+        this._setActiveToolBtn('wideRoadBtn');
+
+        this.updateStatus('Wide road placement active');
+
+        this.showModeBanner(`
+            <strong>🛤 Wide Road Placement Mode (2×2)</strong><br>
+            Drag to paint • Press ESC to exit
+        `);
+    }
+
+    _setActiveToolBtn(id) {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active-placement'));
+        if (id) document.getElementById(id)?.classList.add('active-placement');
+    }
+
+    /**
+     * Place a 2×2 wide road with top-left anchor at (gridPos.x, gridPos.y).
+     * All 4 cells are added to this.roads for connectivity, anchor to this.wideRoads.
+     */
+    placeWideRoad(gridPos) {
+        const { x, y } = gridPos;
+        // Check all 4 cells are unlocked and not occupied by buildings
+        for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+                if (!this.isCellUnlocked(x + dx, y + dy)) return;
+                if (this.isBuildingAt(x + dx, y + dy)) return;
+            }
+        }
+        const anchor = `${x},${y}`;
+        if (this.wideRoads.has(anchor)) return; // already placed
+        this.wideRoads.add(anchor);
+        for (let dy = 0; dy < 2; dy++)
+            for (let dx = 0; dx < 2; dx++)
+                this.roads.add(`${x + dx},${y + dy}`);
+        this.renderer.draw();
+    }
+
+    /**
+     * Returns the anchor "x,y" key of the wide road block that contains cell (x,y),
+     * or null if that cell is not part of any wide road.
+     */
+    _getWideRoadAnchor(x, y) {
+        // A 2×2 block's anchor can be at (x,y), (x-1,y), (x,y-1), or (x-1,y-1)
+        for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+                const key = `${x - dx},${y - dy}`;
+                if (this.wideRoads.has(key)) return key;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Remove the road (narrow or wide) at the given cell.
+     * For wide roads, removes the entire 2×2 block.
+     */
+    removeRoadAt(x, y) {
+        const anchor = this._getWideRoadAnchor(x, y);
+        if (anchor) {
+            this.wideRoads.delete(anchor);
+            const [ax, ay] = anchor.split(',').map(Number);
+            for (let dy = 0; dy < 2; dy++)
+                for (let dx = 0; dx < 2; dx++)
+                    this.roads.delete(`${ax + dx},${ay + dy}`);
+        } else {
+            this.roads.delete(`${x},${y}`);
+        }
+        if (this.selectedRoad === `${x},${y}` || anchor) {
+            this.selectedRoad = null;
+        }
+        this.renderer.draw();
+    }
+
     enterBuildingPlacement(template) {
         this.selectedTemplate = template;
         this.placingRoad = false;
+        this.placingWideRoad = false;
         this.placingExpansion = false;
         this.selectedBuilding = null;
         this.selectedRoad = null;
 
+        this._setActiveToolBtn(null);
         this._highlightActiveBuildingBtn(template.id);
         this.updateStatus(`Placing: ${template.name} (ESC to cancel)`);
         this.showModeBanner(`
@@ -488,10 +581,13 @@ export class CityPlanner {
 
     addExpansion() {
         this.placingExpansion = true;
+        this.placingRoad = false;
+        this.placingWideRoad = false;
         this.selectedTemplate = null;
         this.selectedBuilding = null;
         this.selectedRoad = null;
         this._clearActiveBuildingBtn();
+        this._setActiveToolBtn('addExpansionBtn');
         this.hoverPos = null;
         this.updateStatus('Expansion placement active');
         this.showModeBanner(`
@@ -1480,6 +1576,7 @@ export class CityPlanner {
         if (!confirm('Clear all buildings and roads?')) return;
         this.buildings   = [];
         this.roads       = new Set();
+        this.wideRoads   = new Set();
         this.buildingPool = [];
         this.cityMetadata = null;
         document.getElementById('cityInfo').style.display     = 'none';
@@ -1499,6 +1596,7 @@ export class CityPlanner {
         return {
             buildings:     JSON.parse(JSON.stringify(this.buildings)),
             roads:         Array.from(this.roads),
+            wideRoads:     Array.from(this.wideRoads),
             unlockedAreas: JSON.parse(JSON.stringify(this.unlockedAreas)),
             buildingPool:  JSON.parse(JSON.stringify(this.buildingPool)),
             gridWidth:     this.gridWidth,
@@ -1512,6 +1610,7 @@ export class CityPlanner {
         if (snap) {
             this.buildings     = snap.buildings     || [];
             this.roads         = new Set(snap.roads || []);
+            this.wideRoads     = new Set(snap.wideRoads || []);
             this.unlockedAreas = snap.unlockedAreas || [];
             this.buildingPool  = snap.buildingPool  || [];
             this.cityMetadata  = snap.cityMetadata  || null;
@@ -1544,6 +1643,7 @@ export class CityPlanner {
     _initEmptyCityState() {
         this.buildings     = [];
         this.roads         = new Set();
+        this.wideRoads     = new Set();
         this.unlockedAreas = [];
         this.unlockedCells = null;
         this.buildingPool  = [];
@@ -1582,14 +1682,16 @@ export class CityPlanner {
         this.activeCityType = cityType;
 
         // Reset interaction state so no stale drag/selection carries over
-        this.selectedBuilding = null;
-        this.selectedRoad     = null;
-        this.draggingBuilding = null;
-        this.selectedTemplate = null;
-        this.placingRoad      = false;
-        this.isPaintingRoad   = false;
-        this.placingExpansion = false;
-        this.hoverPos         = null;
+        this.selectedBuilding   = null;
+        this.selectedRoad       = null;
+        this.draggingBuilding   = null;
+        this.selectedTemplate   = null;
+        this.placingRoad        = false;
+        this.isPaintingRoad     = false;
+        this.placingWideRoad    = false;
+        this.isPaintingWideRoad = false;
+        this.placingExpansion   = false;
+        this.hoverPos           = null;
         this.hideModeBanner();
 
         this.restoreSnapshot(this.cities[cityType]);

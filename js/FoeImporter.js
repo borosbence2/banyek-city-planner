@@ -196,7 +196,22 @@ export class FoeImporter {
             const isRoad = typeLC.includes('street') || typeLC.includes('road') || type === 'Street';
 
             if (isRoad) {
-                p.roads.add(`${x},${y}`);
+                // CarStreet entities are 2×2 wide roads
+                const isWideRoad = entityId && entityId.includes('CarStreet');
+                if (isWideRoad) {
+                    // Determine block size from meta (should be 2×2), default to 2
+                    const bw = (width  >= 2) ? width  : 2;
+                    const bh = (height >= 2) ? height : 2;
+                    const anchor = `${x},${y}`;
+                    if (!p.wideRoads.has(anchor)) {
+                        p.wideRoads.add(anchor);
+                        for (let dy = 0; dy < bh; dy++)
+                            for (let dx = 0; dx < bw; dx++)
+                                p.roads.add(`${x + dx},${y + dy}`);
+                    }
+                } else {
+                    p.roads.add(`${x},${y}`);
+                }
                 streetsUsed++;
                 return;
             }
