@@ -72,6 +72,9 @@ export class CityPlanner {
         this.wideRoadDragPixelX = 0;
         this.wideRoadDragPixelY = 0;
         this._poolDragTemplate = null;
+        this._poolCtxBuilding  = null;
+        this._poolCtxIdx       = null;
+        this._listCtxBuilding  = null;
 
         // UI state
         this.currentTab  = 'all';
@@ -477,10 +480,47 @@ export class CityPlanner {
             item.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
                 e.preventDefault();
+                this._hidePoolTooltip();
                 this._startPoolDrag(e, building, idx);
             });
+            item.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this._poolCtxBuilding = building;
+                this._poolCtxIdx = idx;
+                const menu = document.getElementById('poolCtxMenu');
+                menu.style.display = 'block';
+                const vw = window.innerWidth, vh = window.innerHeight;
+                const mw = menu.offsetWidth,  mh = menu.offsetHeight;
+                menu.style.left = (e.clientX + mw > vw ? e.clientX - mw : e.clientX) + 'px';
+                menu.style.top  = (e.clientY + mh > vh ? e.clientY - mh : e.clientY) + 'px';
+            });
+            item.addEventListener('mouseenter', (e) => {
+                const template = this.buildingTemplates[building.id] || {};
+                const el = document.getElementById('buildingTooltip');
+                if (!el || !this.events) return;
+                el.innerHTML = this.events._buildTooltipHTML(building, template);
+                el.style.display = 'block';
+                const margin = 12, vw = window.innerWidth, vh = window.innerHeight;
+                const tw = el.offsetWidth, th = el.offsetHeight;
+                el.style.left = (e.clientX + margin + tw > vw ? e.clientX - tw - margin : e.clientX + margin) + 'px';
+                el.style.top  = (e.clientY + margin + th > vh ? e.clientY - th - margin : e.clientY + margin) + 'px';
+            });
+            item.addEventListener('mousemove', (e) => {
+                const el = document.getElementById('buildingTooltip');
+                if (!el || el.style.display === 'none') return;
+                const margin = 12, vw = window.innerWidth, vh = window.innerHeight;
+                const tw = el.offsetWidth, th = el.offsetHeight;
+                el.style.left = (e.clientX + margin + tw > vw ? e.clientX - tw - margin : e.clientX + margin) + 'px';
+                el.style.top  = (e.clientY + margin + th > vh ? e.clientY - th - margin : e.clientY + margin) + 'px';
+            });
+            item.addEventListener('mouseleave', () => this._hidePoolTooltip());
             list.appendChild(item);
         });
+    }
+
+    _hidePoolTooltip() {
+        const el = document.getElementById('buildingTooltip');
+        if (el) el.style.display = 'none';
     }
 
     _startPoolDrag(e, building, poolIdx) {
@@ -623,7 +663,7 @@ export class CityPlanner {
             const oy = this.gridOffsetY;
             for (let ty = oy; ty < oy + this.gridHeight; ty += EXPANSION_SIZE) {
                 for (let tx = ox; tx < ox + this.gridWidth; tx += EXPANSION_SIZE) {
-                    this.unlockedAreas.push({ x: tx, y: ty, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true });
+                    this.unlockedAreas.push({ x: tx, y: ty, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true, autoTiled: true });
                 }
             }
         }
@@ -631,12 +671,44 @@ export class CityPlanner {
         // Don't place a duplicate at the same position
         if (this.unlockedAreas.some(a => a.x === x && a.y === y)) return;
 
-        const nextIndex = this.unlockedAreas.length;
+        const nextIndex = this.unlockedAreas.filter(a => !a.autoTiled).length;
         this.unlockedAreas.push({ x, y, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true });
         this.rebuildUnlockedCells(); // also calls _recomputeGridBounds
         this.resizeCanvas();
-        this.updateStatus(`Expansion #${nextIndex + 1} placed at (${x}, ${y})`);
+        this.updateStatus(`Expansion #${nextIndex + 1} placed`);
         this.renderer.draw();
+    }
+
+    /** Remove a manual expansion block, moving any overlapping buildings to the pool. */
+    removeExpansion(area) {
+        const S = 4; // EXPANSION_SIZE
+        // Find buildings that intersect this 4×4 block
+        const displaced = this.buildings.filter(b =>
+            b.x < area.x + S && b.x + b.width  > area.x &&
+            b.y < area.y + S && b.y + b.height > area.y
+        );
+        displaced.forEach(b => this.buildingPool.push({ ...b }));
+        this.buildings = this.buildings.filter(b => !displaced.includes(b));
+
+        // Remove the expansion
+        this.unlockedAreas = this.unlockedAreas.filter(a => a !== area);
+
+        if (this.unlockedAreas.length === 0) {
+            // Back to open-grid mode
+            this.unlockedCells = null;
+        } else {
+            this.rebuildUnlockedCells();
+        }
+
+        if (displaced.length > 0) this.updatePoolPanel();
+        this.resizeCanvas();
+        this.renderer.draw();
+
+        const msg = displaced.length > 0
+            ? `Expansion removed — ${displaced.length} building(s) moved to pool`
+            : 'Expansion removed';
+        this.updateStatus(msg);
+        setTimeout(() => this.updateStatus('Mode: Select/Move'), 2500);
     }
 
     fitGridToContent() {
@@ -838,6 +910,18 @@ export class CityPlanner {
 
         btn.addEventListener('click', () => {
             this.enterBuildingPlacement({ ...building, id });
+        });
+        btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this._listCtxBuilding = { ...building, id };
+            const nameEl = document.getElementById('listCtxName');
+            if (nameEl) nameEl.textContent = building.name;
+            const menu = document.getElementById('listCtxMenu');
+            menu.style.display = 'block';
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const mw = menu.offsetWidth,  mh = menu.offsetHeight;
+            menu.style.left = (e.clientX + mw > vw ? e.clientX - mw : e.clientX) + 'px';
+            menu.style.top  = (e.clientY + mh > vh ? e.clientY - mh : e.clientY) + 'px';
         });
         return btn;
     }

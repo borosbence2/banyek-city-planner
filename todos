@@ -8,8 +8,21 @@ todos before release
 
 
 - + add expansions button
-- QI library
-- Settlement types library
-- Quantum types library
-- test saving
-- export to image / pdf
+- + QI library
+- +  Settlement types library
+- + Quantum types library
+- + test saving
+- + export to image / pdf
+
+- + double lane roads
+- + remove unnecessary buildings after import
+- + animations for expansion.
+
+- + faster import
+
+- + cult. settlements
+- cult. settlement database
+- colonies
+- import quantum, cultural settlement, colony 
+- context menu in building pool 
+- remove expansions

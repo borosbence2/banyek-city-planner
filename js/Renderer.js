@@ -106,22 +106,50 @@ export class Renderer {
 
         // Draw expansion area borders and index labels on top
         if (this.p.unlockedAreas && this.p.unlockedAreas.length > 0) {
-            this.p.unlockedAreas.forEach((area, index) => {
+            const dark = this.isDark;
+            let manualIndex = 0;
+            let importedIndex = 0;
+            this.p.unlockedAreas.forEach(area => {
                 const x = (area.x || 0) * cellSize;
                 const y = (area.y || 0) * cellSize;
                 const aw = (area.width  || 0) * cellSize;
                 const ah = (area.length || 0) * cellSize;
 
-                ctx.strokeStyle = '#2196F3';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, aw, ah);
-
-                ctx.fillStyle = '#1565C0';
-                ctx.font = 'bold 10px Arial';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(`#${index + 1}`, x + 4, y + 3);
+                if (area.autoTiled) {
+                    // Default area tiles — subtle dashed border only, no label
+                    ctx.save();
+                    ctx.strokeStyle = dark ? 'rgba(140,140,180,0.35)' : 'rgba(120,120,160,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeRect(x, y, aw, ah);
+                    ctx.restore();
+                } else if (area.manual) {
+                    // User-placed expansion — green border + number
+                    manualIndex++;
+                    ctx.strokeStyle = dark ? '#66bb6a' : '#2e7d32';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                    ctx.strokeRect(x, y, aw, ah);
+                    ctx.fillStyle = dark ? '#66bb6a' : '#2e7d32';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(`+${manualIndex}`, x + 4, y + 3);
+                } else {
+                    // Imported from FoE — blue border + number
+                    importedIndex++;
+                    ctx.strokeStyle = dark ? '#64b5f6' : '#2196F3';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                    ctx.strokeRect(x, y, aw, ah);
+                    ctx.fillStyle = dark ? '#64b5f6' : '#1565C0';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(`#${importedIndex}`, x + 4, y + 3);
+                }
             });
+            ctx.setLineDash([]); // reset
         }
     }
 

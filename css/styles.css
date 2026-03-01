@@ -1223,6 +1223,17 @@ canvas.pool-drag-over {
     margin: 3px 0;
 }
 
+.ctx-label {
+    padding: 5px 12px 3px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* ── End Context Menu ────────────────────────────────────────────────────── */
 
 /* ── Render Mode / Legend switching ─────────────────────────────────────── */
@@ -1781,6 +1792,10 @@ body.dark .ctx-delete:hover {
 
 body.dark .ctx-divider {
     background: #3a3a52;
+}
+
+body.dark .ctx-label {
+    color: #aaa;
 }
 
 body.dark .prod-section {

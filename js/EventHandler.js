@@ -7,6 +7,7 @@ export class EventHandler {
     constructor(planner) {
         this.p = planner;
         this._parsedImportData = null;
+        this._ctxExpansion     = null;
     }
 
     setup() {
@@ -182,10 +183,16 @@ export class EventHandler {
         p.canvas.addEventListener('mouseleave',  () => this.handleMouseLeave());
         p.canvas.addEventListener('contextmenu', e => this.handleContextMenu(e));
 
-        // Close context menu on any click outside it
+        // Close context menus on any click outside them
         document.addEventListener('mousedown', (e) => {
             const menu = document.getElementById('ctxMenu');
             if (menu && !menu.contains(e.target)) this._hideContextMenu();
+            const poolMenu = document.getElementById('poolCtxMenu');
+            if (poolMenu && !poolMenu.contains(e.target)) this._hidePoolContextMenu();
+            const listMenu = document.getElementById('listCtxMenu');
+            if (listMenu && !listMenu.contains(e.target)) this._hideListContextMenu();
+            const expMenu = document.getElementById('expansionCtxMenu');
+            if (expMenu && !expMenu.contains(e.target)) this._hideExpansionContextMenu();
         });
 
         document.getElementById('ctxDelete').addEventListener('click', () => {
@@ -214,6 +221,43 @@ export class EventHandler {
             if (this._ctxBuilding && !p.isTownhall(this._ctxBuilding))
                 this._startDuplicateDrag(this._ctxBuilding);
             this._hideContextMenu();
+        });
+
+        // Pool context menu
+        document.getElementById('poolCtxDuplicate').addEventListener('click', () => {
+            if (p._poolCtxBuilding) this._startDuplicateDrag(p._poolCtxBuilding);
+            this._hidePoolContextMenu();
+        });
+        document.getElementById('poolCtxRemove').addEventListener('click', () => {
+            if (p._poolCtxIdx !== null) {
+                p.buildingPool.splice(p._poolCtxIdx, 1);
+                p.updatePoolPanel();
+                p.renderer.draw();
+            }
+            this._hidePoolContextMenu();
+        });
+
+        // Building list context menu
+        document.getElementById('listCtxAddToPool').addEventListener('click', () => {
+            if (!p._listCtxBuilding) return;
+            p.buildingPool.push({ ...p._listCtxBuilding });
+            p.updatePoolPanel();
+            // Flash the name to confirm the add, keep menu open for rapid multi-add
+            const nameEl = document.getElementById('listCtxName');
+            if (nameEl) {
+                nameEl.textContent = `${p._listCtxBuilding.name} ✓`;
+                setTimeout(() => { if (nameEl) nameEl.textContent = p._listCtxBuilding.name; }, 600);
+            }
+        });
+        document.getElementById('listCtxPlace').addEventListener('click', () => {
+            if (p._listCtxBuilding) p.enterBuildingPlacement(p._listCtxBuilding);
+            this._hideListContextMenu();
+        });
+
+        // Expansion context menu
+        document.getElementById('expansionCtxRemove').addEventListener('click', () => {
+            if (this._ctxExpansion) p.removeExpansion(this._ctxExpansion);
+            this._hideExpansionContextMenu();
         });
 
         window.addEventListener('resize', () => p.resizeCanvas());
@@ -640,7 +684,25 @@ export class EventHandler {
             gridPos.x >= b.x && gridPos.x < b.x + b.width &&
             gridPos.y >= b.y && gridPos.y < b.y + b.height
         );
-        if (!building) return;
+
+        // No building — check if we're over a removable (manual) expansion block
+        if (!building) {
+            const S = 4;
+            const area = (p.unlockedAreas || []).find(a =>
+                a.manual && !a.autoTiled &&
+                gridPos.x >= a.x && gridPos.x < a.x + S &&
+                gridPos.y >= a.y && gridPos.y < a.y + S
+            );
+            if (!area) return;
+            this._ctxExpansion = area;
+            const menu = document.getElementById('expansionCtxMenu');
+            menu.style.display = 'block';
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const mw = menu.offsetWidth,  mh = menu.offsetHeight;
+            menu.style.left = (e.clientX + mw > vw ? e.clientX - mw : e.clientX) + 'px';
+            menu.style.top  = (e.clientY + mh > vh ? e.clientY - mh : e.clientY) + 'px';
+            return;
+        }
 
         this._ctxBuilding = building;
 
@@ -669,6 +731,24 @@ export class EventHandler {
         const menu = document.getElementById('ctxMenu');
         if (menu) menu.style.display = 'none';
         this._ctxBuilding = null;
+    }
+
+    _hidePoolContextMenu() {
+        const menu = document.getElementById('poolCtxMenu');
+        if (menu) menu.style.display = 'none';
+        if (this.p) { this.p._poolCtxBuilding = null; this.p._poolCtxIdx = null; }
+    }
+
+    _hideListContextMenu() {
+        const menu = document.getElementById('listCtxMenu');
+        if (menu) menu.style.display = 'none';
+        if (this.p) this.p._listCtxBuilding = null;
+    }
+
+    _hideExpansionContextMenu() {
+        const menu = document.getElementById('expansionCtxMenu');
+        if (menu) menu.style.display = 'none';
+        this._ctxExpansion = null;
     }
 
     /** Update the "Importing into: …" label in the import modal. */

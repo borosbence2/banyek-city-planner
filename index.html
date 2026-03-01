@@ -213,12 +213,32 @@
 
     <div id="buildingTooltip" class="building-tooltip" style="display:none;"></div>
 
-    <!-- Right-click context menu -->
+    <!-- Right-click context menu (canvas buildings) -->
     <div id="ctxMenu" class="ctx-menu" style="display:none;">
         <button class="ctx-item ctx-duplicate" id="ctxDuplicate">⧉ Duplicate &amp; drag</button>
         <div class="ctx-divider"></div>
         <button class="ctx-item ctx-stash"     id="ctxStash">📦 Stash to pool</button>
         <button class="ctx-item ctx-delete"    id="ctxDelete">🗑 Delete</button>
+    </div>
+
+    <!-- Right-click context menu (pool items) -->
+    <div id="poolCtxMenu" class="ctx-menu" style="display:none;">
+        <button class="ctx-item ctx-duplicate" id="poolCtxDuplicate">⧉ Duplicate &amp; drag</button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item ctx-delete"    id="poolCtxRemove">🗑 Remove from pool</button>
+    </div>
+
+    <!-- Right-click context menu (building list sidebar) -->
+    <div id="listCtxMenu" class="ctx-menu" style="display:none;">
+        <div class="ctx-label" id="listCtxName"></div>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" id="listCtxAddToPool">📦 Add to pool</button>
+        <button class="ctx-item" id="listCtxPlace">🖱 Place on canvas</button>
+    </div>
+
+    <!-- Right-click context menu (empty expansion area) -->
+    <div id="expansionCtxMenu" class="ctx-menu" style="display:none;">
+        <button class="ctx-item ctx-delete" id="expansionCtxRemove">🗑 Remove expansion → pool</button>
     </div>
 
     <!-- FoE Helper Import Modal -->
