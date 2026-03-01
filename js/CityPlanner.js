@@ -1,5 +1,5 @@
-import { CONSTANTS, CITY_TYPES, SETTLEMENT_TYPES } from './constants.js';
-export { CITY_TYPES, SETTLEMENT_TYPES }; // re-export for convenience
+import { CONSTANTS, CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES } from './constants.js';
+export { CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES }; // re-export for convenience
 import { Utils }              from './utils.js';
 import { Renderer }           from './Renderer.js';
 import { EventHandler }       from './EventHandler.js';
@@ -9,6 +9,7 @@ import { ProductionOverview } from './ProductionOverview.js';
 import { BUILDINGS }          from '../data/foe_buildings_database.js';
 import { QI_BUILDINGS }       from '../data/qi_buildings_database.js';
 import { SETTLEMENT_BUILDINGS } from '../data/settlement_buildings_database.js';
+import { COLONY_BUILDINGS }    from '../data/colony_buildings_database.js';
 
 export class CityPlanner {
     constructor() {
@@ -29,11 +30,12 @@ export class CityPlanner {
         this.lastPanX  = 0;
         this.lastPanY  = 0;
 
-        // Building catalogue — main city + QI + all settlement buildings
-        this.buildingTemplates = { ...BUILDINGS, ...QI_BUILDINGS, ...SETTLEMENT_BUILDINGS };
+        // Building catalogue — main city + QI + settlements + colonies
+        this.buildingTemplates = { ...BUILDINGS, ...QI_BUILDINGS, ...SETTLEMENT_BUILDINGS, ...COLONY_BUILDINGS };
 
-        // Active settlement type (default to Vikings)
+        // Active settlement / colony type
         this.activeSettlementType = 'vikings';
+        this.activeColonyType     = 'mars';
 
         // Multi-city registry
         this.activeCityType = 'main';
@@ -750,6 +752,7 @@ export class CityPlanner {
 
         const isQI         = this.activeCityType === 'quantum';
         const isSettlement = this.activeCityType === 'settlement';
+        const isColony     = this.activeCityType === 'colony';
         const filtered = Object.entries(this.buildingTemplates)
             .filter(([, b]) => {
                 if (this.isTownhall(b)) return false;
@@ -757,7 +760,8 @@ export class CityPlanner {
                 if (isQI)         return b.age === 'Quantum Incursion' && search;
                 if (isSettlement) return b.settlementType === this.activeSettlementType &&
                     (this.currentTab === 'all' || b.type === this.currentTab) && search;
-                return !b.settlementType && b.age !== 'Quantum Incursion' &&
+                if (isColony)     return b.colonyType === this.activeColonyType && search;
+                return !b.settlementType && !b.colonyType && b.age !== 'Quantum Incursion' &&
                     (this.currentTab === 'all' || b.type === this.currentTab) && search;
             });
 
@@ -831,6 +835,42 @@ export class CityPlanner {
                 const list = sGroups.get(type) || [];
                 if (list.length === 0) return;
                 const key = 'settlement_' + type;
+                const expanded = this.expandedEras.has(key);
+                const header = document.createElement('div');
+                header.className = 'age-group-header' + (expanded ? ' expanded' : '');
+                header.innerHTML =
+                    `<span class="age-group-arrow">${expanded ? '▼' : '▶'}</span>` +
+                    `${label}<span class="age-group-count">(${list.length})</span>`;
+                header.addEventListener('click', () => {
+                    if (this.expandedEras.has(key)) this.expandedEras.delete(key);
+                    else this.expandedEras.add(key);
+                    this.updateBuildingList();
+                });
+                container.appendChild(header);
+                if (expanded) {
+                    list.forEach(([id, building]) => container.appendChild(this._buildingBtn(id, building)));
+                }
+            });
+            return;
+        }
+
+        // ── Colony: type-based collapsible groups ─────────────────────────
+        if (isColony) {
+            const C_TYPE_ORDER = [
+                ['residential',  '🏠 Residential'],
+                ['goods',        '📦 Goods'],
+                ['lifesupport',  '💚 Life Support'],
+            ];
+            const cGroups = new Map(C_TYPE_ORDER.map(([t]) => [t, []]));
+            filtered.forEach(entry => {
+                const type = entry[1].type || 'goods';
+                if (!cGroups.has(type)) cGroups.set(type, []);
+                cGroups.get(type).push(entry);
+            });
+            C_TYPE_ORDER.forEach(([type, label]) => {
+                const list = cGroups.get(type) || [];
+                if (list.length === 0) return;
+                const key = 'colony_' + type;
                 const expanded = this.expandedEras.has(key);
                 const header = document.createElement('div');
                 header.className = 'age-group-header' + (expanded ? ' expanded' : '');
@@ -1788,6 +1828,10 @@ export class CityPlanner {
             const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
             this.gridWidth  = st ? st.gridW : CONSTANTS.DEFAULT_GRID_SIZE;
             this.gridHeight = st ? st.gridH : CONSTANTS.DEFAULT_GRID_SIZE;
+        } else if (this.activeCityType === 'colony') {
+            const ct = COLONY_TYPES.find(c => c.id === this.activeColonyType);
+            this.gridWidth  = ct ? ct.gridW : CONSTANTS.DEFAULT_GRID_SIZE;
+            this.gridHeight = ct ? ct.gridH : CONSTANTS.DEFAULT_GRID_SIZE;
         } else {
             const gridDef = CONSTANTS.DEFAULT_GRID_SIZE_BY_TYPE[this.activeCityType] || { w: CONSTANTS.DEFAULT_GRID_SIZE, h: CONSTANTS.DEFAULT_GRID_SIZE };
             this.gridWidth  = gridDef.w;
@@ -1811,9 +1855,12 @@ export class CityPlanner {
         } else if (this.activeCityType === 'settlement') {
             const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
             if (st) entry = [st.embassyId, this.buildingTemplates[st.embassyId]];
+        } else if (this.activeCityType === 'colony') {
+            const ct = COLONY_TYPES.find(c => c.id === this.activeColonyType);
+            if (ct) entry = [ct.hqId, this.buildingTemplates[ct.hqId]];
         } else {
             entry = Object.entries(this.buildingTemplates)
-                .find(([id, t]) => t.type === 'townhall' && !id.startsWith('S_'));
+                .find(([id, t]) => t.type === 'townhall' && !id.startsWith('S_') && !id.startsWith('C_'));
         }
         if (!entry || !entry[1]) return;
         const [id, t] = entry;
@@ -1865,8 +1912,8 @@ export class CityPlanner {
         this.hoverPos           = null;
         this.hideModeBanner();
 
-        // Reset tab filter when entering settlement (type-filter-grid is hidden there)
-        if (cityType === 'settlement') {
+        // Reset tab filter when entering settlement or colony (type-filter-grid is hidden there)
+        if (cityType === 'settlement' || cityType === 'colony') {
             this.currentTab = 'all';
             document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'all'));
         }
@@ -1897,6 +1944,7 @@ export class CityPlanner {
         }
 
         this.updateSettlementTypePicker();
+        this.updateColonyTypePicker();
     }
 
     /** Render the settlement type picker and update its active state. */
@@ -1935,6 +1983,59 @@ export class CityPlanner {
         const note = document.getElementById('settlementNote');
         if (note && st) {
             note.textContent = st.hasRoads ? '🛤 Roads required' : '✦ No roads needed';
+        }
+    }
+
+    /** Switch to a different Space Age colony type. */
+    switchColonyType(colonyTypeId) {
+        if (this.activeColonyType === colonyTypeId && this.activeCityType === 'colony') return;
+        this.activeColonyType = colonyTypeId;
+        this._initEmptyCityState();
+        this.cities['colony'] = null;
+        this.rebuildUnlockedCells();
+        document.getElementById('gridWidth').value  = this.gridWidth;
+        document.getElementById('gridHeight').value = this.gridHeight;
+        this.resizeCanvas();
+        this.centreView();
+        this.updateBuildingList();
+        this.updatePoolPanel();
+        this.updateColonyTypePicker();
+        this.renderer.draw();
+    }
+
+    /** Render the colony type picker and update its active state. */
+    updateColonyTypePicker() {
+        const section = document.getElementById('colonyTypeSection');
+        if (!section) return;
+        const isColony = this.activeCityType === 'colony';
+        section.style.display = isColony ? '' : 'none';
+        if (!isColony) return;
+
+        const grid = document.getElementById('colonyTypeGrid');
+        if (!grid) return;
+
+        if (!grid.dataset.built) {
+            grid.innerHTML = '';
+            COLONY_TYPES.forEach(ct => {
+                const btn = document.createElement('button');
+                btn.className = 'settlement-type-btn';
+                btn.dataset.colonyId = ct.id;
+                btn.title = ct.label;
+                btn.innerHTML = `<span class="st-icon">${ct.icon}</span><span class="st-label">${ct.label}</span>`;
+                btn.addEventListener('click', () => this.switchColonyType(ct.id));
+                grid.appendChild(btn);
+            });
+            grid.dataset.built = 'true';
+        }
+
+        grid.querySelectorAll('.settlement-type-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.colonyId === this.activeColonyType);
+        });
+
+        const ct = COLONY_TYPES.find(c => c.id === this.activeColonyType);
+        const note = document.getElementById('colonyNote');
+        if (note && ct) {
+            note.textContent = ct.hasRoads ? '🛤 Roads required' : '✦ No roads needed';
         }
     }
 }

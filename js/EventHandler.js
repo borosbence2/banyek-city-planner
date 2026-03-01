@@ -276,8 +276,9 @@ export class EventHandler {
             });
         }
 
-        // Settlement type picker — initial render
+        // Settlement and colony type pickers — initial render
         p.updateSettlementTypePicker();
+        p.updateColonyTypePicker();
 
         // Collapsible sidebar sections — fluid height animation via scrollHeight
         document.querySelectorAll('.section-content.collapsed').forEach(el => {

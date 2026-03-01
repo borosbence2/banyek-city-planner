@@ -21,6 +21,21 @@ export const SETTLEMENT_TYPES = [
     { id: 'pirates',     label: 'Pirates',       icon: '🏴‍☠️', gridW:  8, gridH:  8, hasRoads: false, embassyId: 'S_Pirates_Embassy'      },
 ];
 
+/**
+ * Space Age Colony types.
+ * gridW/gridH: starting grid size in cells.
+ * hqId:        building ID of the headquarters (placed automatically).
+ * hasRoads:    whether this colony uses road connections.
+ */
+export const COLONY_TYPES = [
+    { id: 'mars',         label: 'Mars',          icon: '🔴', gridW: 20, gridH: 20, hasRoads: true,  hqId: 'C_Mars_TH'   },
+    { id: 'asteroid_belt',label: 'Asteroid Belt', icon: '🪨', gridW: 20, gridH: 20, hasRoads: true,  hqId: 'C_AB_TH'     },
+    { id: 'venus',        label: 'Venus',          icon: '🟡', gridW: 20, gridH: 20, hasRoads: true,  hqId: 'C_Venus_TH'  },
+    { id: 'jupiter_moon', label: 'Jupiter Moon',   icon: '🌊', gridW: 20, gridH: 20, hasRoads: true,  hqId: 'C_JM_TH'     },
+    { id: 'titan',        label: 'Titan',          icon: '🧊', gridW: 20, gridH: 20, hasRoads: false, hqId: 'C_Titan_TH'  },
+    { id: 'space_hub',    label: 'Space Hub',      icon: '🛸', gridW: 20, gridH: 20, hasRoads: false, hqId: 'C_SH_TH'     },
+];
+
 export const CONSTANTS = {
     DEFAULT_CELL_SIZE: 30,
     MIN_ZOOM: 0.1,

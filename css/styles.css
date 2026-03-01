@@ -1303,15 +1303,17 @@ canvas.pool-drag-over {
 
 /* ── City-mode-aware sidebar visibility ─────────────────────────────────── */
 
-/* Building section: main city + quantum; map mode: main city only */
-#sidebar:not([data-city-type="main"]):not([data-city-type="quantum"]):not([data-city-type="settlement"]) #buildingSection { display: none; }
+/* Building section: main + quantum + settlement + colony all have palettes */
+#sidebar:not([data-city-type="main"]):not([data-city-type="quantum"]):not([data-city-type="settlement"]):not([data-city-type="colony"]) #buildingSection { display: none; }
 #sidebar[data-city-type="settlement"] .type-filter-grid { display: none; }
+#sidebar[data-city-type="colony"]     .type-filter-grid { display: none; }
 #sidebar:not([data-city-type="main"]) #mapModeSection  { display: none; }
 
-/* Placeholder: hidden in main, settlement, and quantum (all have building palettes) */
-#sidebar[data-city-type="main"]       #cityModePlaceholder { display: none !important; }
-#sidebar[data-city-type="quantum"]    #cityModePlaceholder { display: none !important; }
-#sidebar[data-city-type="settlement"] #cityModePlaceholder { display: none !important; }
+/* Settlement/colony type pickers: hidden unless on their tab */
+#settlementTypeSection { display: none; }
+#colonyTypeSection     { display: none; }
+#sidebar[data-city-type="settlement"] #settlementTypeSection { display: block; }
+#sidebar[data-city-type="colony"]     #colonyTypeSection     { display: block; }
 
 /* ── Settlement type picker ──────────────────────────────────────────────── */
 
