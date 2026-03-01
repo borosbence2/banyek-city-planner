@@ -61,7 +61,20 @@
                 </div><!-- /.section-content -->
             </div>
 
-            <!-- Placeholder shown for non-main city modes -->
+            <!-- Settlement type picker — visible only when settlement tab is active -->
+            <div id="settlementTypeSection" class="section">
+                <h2 class="section-header" data-toggle="settlementTypeContent">
+                    🏛️ Settlement Type <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="settlementTypeContent">
+                    <div class="settlement-type-grid" id="settlementTypeGrid">
+                        <!-- Populated by JS from SETTLEMENT_TYPES -->
+                    </div>
+                    <div class="settlement-note" id="settlementNote"></div>
+                </div>
+            </div>
+
+            <!-- Placeholder for colony (no building library yet) -->
             <div id="cityModePlaceholder" class="section" style="display:none;">
                 <div class="info-note" style="color:#666;">
                     🏗️ Building library for this city type is coming soon.<br>
@@ -213,26 +226,34 @@
         <div class="modal-content">
             <h2>Import from FoE Helper</h2>
             <div class="import-instructions">
-                <h3>How to get your city data:</h3>
                 <ol>
                     <li>Open Forge of Empires with FoE Helper extension installed</li>
-                    <li>Click on the FoE Helper menu</li>
-                    <li>Go to <strong>"Town Overview"</strong> or <strong>"City Planner"</strong></li>
-                    <li>Click the <strong>"Copy citymap data"</strong> button</li>
-                    <li>Paste the copied JSON data below</li>
+                    <li>Go to <strong>Town Overview → City Planner</strong></li>
+                    <li>Click <strong>"Copy citymap data"</strong></li>
+                    <li>Click the button below</li>
                 </ol>
             </div>
             <div class="import-target-bar">
                 Importing into: <strong id="importTargetLabel">🏙️ Main City</strong>
             </div>
-            <textarea id="foeImportText" placeholder="Paste your FoE Helper JSON data here..."></textarea>
+
+            <button class="btn success import-clipboard-btn" id="importClipboardBtn">
+                📋 Paste from Clipboard
+            </button>
+            <div id="clipboardStatus" class="clipboard-status" style="display:none;"></div>
+
+            <details class="import-manual-fallback">
+                <summary>Paste manually instead</summary>
+                <textarea id="foeImportText" placeholder="Paste your FoE Helper JSON data here..."></textarea>
+            </details>
+
             <div id="cityDetectionArea" style="display:none;">
                 <div class="detect-title">Cities detected in this export — select which to import:</div>
                 <div id="cityCheckboxes"></div>
             </div>
             <div class="modal-buttons">
                 <button class="btn tool" id="closeFoeImportBtn">Cancel</button>
-                <button class="btn success" id="importFoeConfirmBtn">Import</button>
+                <button class="btn success" id="importFoeConfirmBtn" disabled>Import</button>
             </div>
         </div>
     </div>

@@ -1,5 +1,5 @@
-import { CONSTANTS, CITY_TYPES } from './constants.js';
-export { CITY_TYPES }; // re-export for convenience
+import { CONSTANTS, CITY_TYPES, SETTLEMENT_TYPES } from './constants.js';
+export { CITY_TYPES, SETTLEMENT_TYPES }; // re-export for convenience
 import { Utils }              from './utils.js';
 import { Renderer }           from './Renderer.js';
 import { EventHandler }       from './EventHandler.js';
@@ -8,6 +8,7 @@ import { Optimizer }          from './Optimizer.js';
 import { ProductionOverview } from './ProductionOverview.js';
 import { BUILDINGS }          from '../data/foe_buildings_database.js';
 import { QI_BUILDINGS }       from '../data/qi_buildings_database.js';
+import { SETTLEMENT_BUILDINGS } from '../data/settlement_buildings_database.js';
 
 export class CityPlanner {
     constructor() {
@@ -28,8 +29,11 @@ export class CityPlanner {
         this.lastPanX  = 0;
         this.lastPanY  = 0;
 
-        // Building catalogue — main city + Quantum Incursion databases merged
-        this.buildingTemplates = { ...BUILDINGS, ...QI_BUILDINGS };
+        // Building catalogue — main city + QI + all settlement buildings
+        this.buildingTemplates = { ...BUILDINGS, ...QI_BUILDINGS, ...SETTLEMENT_BUILDINGS };
+
+        // Active settlement type (default to Vikings)
+        this.activeSettlementType = 'vikings';
 
         // Multi-city registry
         this.activeCityType = 'main';
@@ -672,15 +676,17 @@ export class CityPlanner {
         const container = document.getElementById('buildingList');
         container.innerHTML = '';
 
-        const isQI = this.activeCityType === 'quantum';
+        const isQI         = this.activeCityType === 'quantum';
+        const isSettlement = this.activeCityType === 'settlement';
         const filtered = Object.entries(this.buildingTemplates)
             .filter(([, b]) => {
-                if (this.isTownhall(b)) return false; // always auto-placed, never in list
-                if (isQI) return b.age === 'Quantum Incursion' &&
-                    b.name.toLowerCase().includes(this.searchTerm);
-                return b.age !== 'Quantum Incursion' &&
-                    (this.currentTab === 'all' || b.type === this.currentTab) &&
-                    b.name.toLowerCase().includes(this.searchTerm);
+                if (this.isTownhall(b)) return false;
+                const search = b.name.toLowerCase().includes(this.searchTerm);
+                if (isQI)         return b.age === 'Quantum Incursion' && search;
+                if (isSettlement) return b.settlementType === this.activeSettlementType &&
+                    (this.currentTab === 'all' || b.type === this.currentTab) && search;
+                return !b.settlementType && b.age !== 'Quantum Incursion' &&
+                    (this.currentTab === 'all' || b.type === this.currentTab) && search;
             });
 
         // ── QI: type-based collapsible groups ─────────────────────────────
@@ -717,6 +723,42 @@ export class CityPlanner {
                 const list = qiGroups.get(type) || [];
                 if (list.length === 0) return;
                 const key = 'qi_' + type;
+                const expanded = this.expandedEras.has(key);
+                const header = document.createElement('div');
+                header.className = 'age-group-header' + (expanded ? ' expanded' : '');
+                header.innerHTML =
+                    `<span class="age-group-arrow">${expanded ? '▼' : '▶'}</span>` +
+                    `${label}<span class="age-group-count">(${list.length})</span>`;
+                header.addEventListener('click', () => {
+                    if (this.expandedEras.has(key)) this.expandedEras.delete(key);
+                    else this.expandedEras.add(key);
+                    this.updateBuildingList();
+                });
+                container.appendChild(header);
+                if (expanded) {
+                    list.forEach(([id, building]) => container.appendChild(this._buildingBtn(id, building)));
+                }
+            });
+            return;
+        }
+
+        // ── Settlement: type-based collapsible groups ─────────────────────
+        if (isSettlement) {
+            const S_TYPE_ORDER = [
+                ['residential', '🏠 Residential'],
+                ['goods',       '📦 Cultural Goods'],
+                ['culture',     '🎭 Diplomacy'],
+            ];
+            const sGroups = new Map(S_TYPE_ORDER.map(([t]) => [t, []]));
+            filtered.forEach(entry => {
+                const type = entry[1].type || 'culture';
+                if (!sGroups.has(type)) sGroups.set(type, []);
+                sGroups.get(type).push(entry);
+            });
+            S_TYPE_ORDER.forEach(([type, label]) => {
+                const list = sGroups.get(type) || [];
+                if (list.length === 0) return;
+                const key = 'settlement_' + type;
                 const expanded = this.expandedEras.has(key);
                 const header = document.createElement('div');
                 header.className = 'age-group-header' + (expanded ? ' expanded' : '');
@@ -1658,9 +1700,15 @@ export class CityPlanner {
         this.unlockedCells = null;
         this.buildingPool  = [];
         this.cityMetadata  = null;
-        const gridDef = CONSTANTS.DEFAULT_GRID_SIZE_BY_TYPE[this.activeCityType] || { w: CONSTANTS.DEFAULT_GRID_SIZE, h: CONSTANTS.DEFAULT_GRID_SIZE };
-        this.gridWidth   = gridDef.w;
-        this.gridHeight  = gridDef.h;
+        if (this.activeCityType === 'settlement') {
+            const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
+            this.gridWidth  = st ? st.gridW : CONSTANTS.DEFAULT_GRID_SIZE;
+            this.gridHeight = st ? st.gridH : CONSTANTS.DEFAULT_GRID_SIZE;
+        } else {
+            const gridDef = CONSTANTS.DEFAULT_GRID_SIZE_BY_TYPE[this.activeCityType] || { w: CONSTANTS.DEFAULT_GRID_SIZE, h: CONSTANTS.DEFAULT_GRID_SIZE };
+            this.gridWidth  = gridDef.w;
+            this.gridHeight = gridDef.h;
+        }
         this.gridOffsetX = 0;
         this.gridOffsetY = 0;
         this.optimizer._snapshot = null;
@@ -1668,18 +1716,47 @@ export class CityPlanner {
     }
 
     /**
-     * Place the default town hall for the current city type at (0, 0).
-     * For QI: first main_building template; for all others: first townhall template.
+     * Place the default town hall / embassy for the current city type at (0, 0).
      * Does nothing if a townhall is already on the canvas.
      */
     _placeDefaultTownhall() {
         if (this.buildings.some(b => this.isTownhall(b))) return;
-        const wantType = this.activeCityType === 'quantum' ? 'main_building' : 'townhall';
-        const entry = Object.entries(this.buildingTemplates).find(([, t]) => t.type === wantType);
-        if (!entry) return;
+        let entry;
+        if (this.activeCityType === 'quantum') {
+            entry = Object.entries(this.buildingTemplates).find(([, t]) => t.type === 'main_building');
+        } else if (this.activeCityType === 'settlement') {
+            const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
+            if (st) entry = [st.embassyId, this.buildingTemplates[st.embassyId]];
+        } else {
+            entry = Object.entries(this.buildingTemplates)
+                .find(([id, t]) => t.type === 'townhall' && !id.startsWith('S_'));
+        }
+        if (!entry || !entry[1]) return;
         const [id, t] = entry;
         this.buildings.push({ id, x: 0, y: 0, width: t.width, height: t.height,
             name: t.name, color: t.color, type: t.type, age: t.age, needsRoad: t.needsRoad ?? 0 });
+    }
+
+    /**
+     * Switch to a different cultural settlement type.
+     * Saves the current settlement snapshot, then initialises a fresh grid
+     * with the new embassy and correct default grid dimensions.
+     */
+    switchSettlementType(settlementTypeId) {
+        if (this.activeSettlementType === settlementTypeId && this.activeCityType === 'settlement') return;
+        this.activeSettlementType = settlementTypeId;
+        // Reset to a fresh settlement for the new type
+        this._initEmptyCityState();
+        this.cities['settlement'] = null; // clear saved snapshot so restoreSnapshot re-inits
+        this.rebuildUnlockedCells();
+        document.getElementById('gridWidth').value  = this.gridWidth;
+        document.getElementById('gridHeight').value = this.gridHeight;
+        this.resizeCanvas();
+        this.centreView();
+        this.updateBuildingList();
+        this.updatePoolPanel();
+        this.updateSettlementTypePicker();
+        this.renderer.draw();
     }
 
     /** Switch to another city type, preserving the current one first. */
@@ -1704,6 +1781,12 @@ export class CityPlanner {
         this.hoverPos           = null;
         this.hideModeBanner();
 
+        // Reset tab filter when entering settlement (type-filter-grid is hidden there)
+        if (cityType === 'settlement') {
+            this.currentTab = 'all';
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'all'));
+        }
+
         this.restoreSnapshot(this.cities[cityType]);
         this.updateCityTabs();
     }
@@ -1727,6 +1810,47 @@ export class CityPlanner {
         // Leave main city → reset Activity mode so non-main cities show Normal view
         if (this.activeCityType !== 'main' && this.renderMode !== 'normal') {
             this.setRenderMode('normal');
+        }
+
+        this.updateSettlementTypePicker();
+    }
+
+    /** Render the settlement type picker and update its active state. */
+    updateSettlementTypePicker() {
+        const section = document.getElementById('settlementTypeSection');
+        if (!section) return;
+        const isSettlement = this.activeCityType === 'settlement';
+        section.style.display = isSettlement ? '' : 'none';
+        if (!isSettlement) return;
+
+        const grid = document.getElementById('settlementTypeGrid');
+        if (!grid) return;
+
+        // Build picker buttons if not yet rendered
+        if (!grid.dataset.built) {
+            grid.innerHTML = '';
+            SETTLEMENT_TYPES.forEach(st => {
+                const btn = document.createElement('button');
+                btn.className = 'settlement-type-btn';
+                btn.dataset.settlementId = st.id;
+                btn.title = st.label;
+                btn.innerHTML = `<span class="st-icon">${st.icon}</span><span class="st-label">${st.label}</span>`;
+                btn.addEventListener('click', () => this.switchSettlementType(st.id));
+                grid.appendChild(btn);
+            });
+            grid.dataset.built = 'true';
+        }
+
+        // Update active state
+        grid.querySelectorAll('.settlement-type-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.settlementId === this.activeSettlementType);
+        });
+
+        // Show road hint
+        const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
+        const note = document.getElementById('settlementNote');
+        if (note && st) {
+            note.textContent = st.hasRoads ? '🛤 Roads required' : '✦ No roads needed';
         }
     }
 }

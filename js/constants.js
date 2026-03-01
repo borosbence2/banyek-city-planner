@@ -5,6 +5,22 @@ export const CITY_TYPES = [
     { id: 'quantum',    label: 'Quantum Incursion',     icon: '⚡' },
 ];
 
+/**
+ * Cultural Settlement types.
+ * gridW/gridH: starting grid in cells (each expansion = 4×4 cells).
+ * embassyId:   building ID of the embassy (placed automatically on new settlement).
+ * hasRoads:    whether this settlement uses road connections.
+ */
+export const SETTLEMENT_TYPES = [
+    { id: 'vikings',     label: 'Vikings',       icon: '⚓',   gridW:  8, gridH:  8, hasRoads: true,  embassyId: 'S_Vikings_Embassy'     },
+    { id: 'feudal_japan',label: 'Feudal Japan',  icon: '⛩️',  gridW:  8, gridH:  8, hasRoads: true,  embassyId: 'S_Japan_Embassy'        },
+    { id: 'egypt',       label: 'Ancient Egypt', icon: '🏺',   gridW: 16, gridH:  8, hasRoads: true,  embassyId: 'S_Egypt_Embassy'        },
+    { id: 'aztecs',      label: 'Aztecs',        icon: '🌿',   gridW: 12, gridH:  8, hasRoads: true,  embassyId: 'S_Aztecs_Embassy'       },
+    { id: 'mughal',      label: 'Mughal Empire', icon: '🕌',   gridW: 16, gridH: 12, hasRoads: true,  embassyId: 'S_Mughal_Embassy'       },
+    { id: 'polynesia',   label: 'Polynesia',     icon: '🌴',   gridW:  8, gridH:  8, hasRoads: false, embassyId: 'S_Polynesia_Embassy'    },
+    { id: 'pirates',     label: 'Pirates',       icon: '🏴‍☠️', gridW:  8, gridH:  8, hasRoads: false, embassyId: 'S_Pirates_Embassy'      },
+];
+
 export const CONSTANTS = {
     DEFAULT_CELL_SIZE: 30,
     MIN_ZOOM: 0.1,

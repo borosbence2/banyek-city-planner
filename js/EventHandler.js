@@ -6,6 +6,7 @@ import { FoeImporter } from './FoeImporter.js';
 export class EventHandler {
     constructor(planner) {
         this.p = planner;
+        this._parsedImportData = null;
     }
 
     setup() {
@@ -37,26 +38,63 @@ export class EventHandler {
             btn.addEventListener('click', () => p.switchCity(btn.dataset.city))
         );
 
-        // FoE import — open modal, reset detection state
+        // FoE import — open modal, reset state
         document.getElementById('importFoeBtn').addEventListener('click', () => {
             this._updateImportTargetLabel();
             document.getElementById('foeImportText').value = '';
             document.getElementById('cityDetectionArea').style.display = 'none';
+            document.getElementById('clipboardStatus').style.display = 'none';
+            document.getElementById('importFoeConfirmBtn').disabled = true;
+            this._parsedImportData = null;
             p.showModal('importFoeModal');
         });
         document.getElementById('closeFoeImportBtn').addEventListener('click', () => p.hideModal('importFoeModal'));
 
-        // Auto-detect cities when the user pastes JSON
-        document.getElementById('foeImportText').addEventListener('input', () => this._detectImportCities());
+        // Clipboard paste button — primary import path
+        document.getElementById('importClipboardBtn').addEventListener('click', async () => {
+            const statusEl = document.getElementById('clipboardStatus');
+            statusEl.style.display = 'block';
+            statusEl.className = 'clipboard-status';
+            statusEl.textContent = '⏳ Reading clipboard…';
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text) throw new Error('Clipboard is empty.');
+                let data;
+                try { data = JSON.parse(text); }
+                catch { throw new Error('Clipboard content is not valid JSON. Make sure you copied the FoE Helper city data.'); }
+                this._parsedImportData = data;
+                this._runCityDetection(data);
+                statusEl.className = 'clipboard-status success';
+                statusEl.textContent = '✅ Data read from clipboard successfully.';
+                document.getElementById('importFoeConfirmBtn').disabled = false;
+            } catch (err) {
+                statusEl.className = 'clipboard-status error';
+                statusEl.textContent = `❌ ${err.message}`;
+                document.getElementById('importFoeConfirmBtn').disabled = true;
+            }
+        });
+
+        // Manual textarea fallback — auto-detect cities on input
+        document.getElementById('foeImportText').addEventListener('input', () => {
+            const jsonText = document.getElementById('foeImportText').value.trim();
+            if (!jsonText) {
+                this._parsedImportData = null;
+                document.getElementById('importFoeConfirmBtn').disabled = true;
+                document.getElementById('cityDetectionArea').style.display = 'none';
+                return;
+            }
+            let data;
+            try { data = JSON.parse(jsonText); }
+            catch { return; }
+            this._parsedImportData = data;
+            this._runCityDetection(data);
+            document.getElementById('importFoeConfirmBtn').disabled = false;
+        });
 
         // Confirm import — collect checked city types and run
         document.getElementById('importFoeConfirmBtn').addEventListener('click', () => {
-            const jsonText = document.getElementById('foeImportText').value.trim();
-            if (!jsonText) { alert('Please paste your FoE Helper data first!'); return; }
-
-            let data;
-            try { data = JSON.parse(jsonText); }
-            catch { alert('Invalid JSON. Please paste the complete FoE Helper export.'); return; }
+            const data = this._parsedImportData;
+            if (!data) { alert('Please paste your FoE Helper data first!'); return; }
 
             // Gather checked cities (fall back to active city type if detection area is hidden)
             const detectionArea = document.getElementById('cityDetectionArea');
@@ -193,6 +231,9 @@ export class EventHandler {
                 localStorage.setItem('darkMode', isDark);
             });
         }
+
+        // Settlement type picker — initial render
+        p.updateSettlementTypePicker();
 
         // Collapsible sidebar sections — fluid height animation via scrollHeight
         document.querySelectorAll('.section-content.collapsed').forEach(el => {
@@ -638,25 +679,18 @@ export class EventHandler {
     }
 
     /**
-     * Auto-detect which city types are present in the pasted JSON and
-     * render checkboxes in #cityDetectionArea.
+     * Render city-detection checkboxes for a pre-parsed data object.
      */
-    _detectImportCities() {
+    _runCityDetection(data) {
         const p = this.p;
-        const jsonText = document.getElementById('foeImportText').value.trim();
         const area = document.getElementById('cityDetectionArea');
         const box  = document.getElementById('cityCheckboxes');
-
-        if (!jsonText) { area.style.display = 'none'; return; }
-
-        let data;
-        try { data = JSON.parse(jsonText); } catch { area.style.display = 'none'; return; }
 
         const detected = new Set(FoeImporter.detectCities(data));
         if (detected.size === 0) { area.style.display = 'none'; return; }
 
         box.innerHTML = CITY_TYPES.map(ct => {
-            const found = detected.has(ct.id);
+            const found    = detected.has(ct.id);
             const isActive = ct.id === p.activeCityType;
             const checked  = found ? 'checked' : '';
             const disabled = found ? '' : 'disabled';
