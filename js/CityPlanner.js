@@ -91,12 +91,14 @@ export class CityPlanner {
         this.optimizer        = new Optimizer(this);
         this.productionOverview = new ProductionOverview(this);
 
+        this._placeDefaultTownhall();
         this.events.setup();
         this.productionOverview.setupEvents();
         this.updateBuildingList();
         this.updatePoolPanel();
         this.resizeCanvas();
         this.updateCityTabs();
+        this._loadFromUrlHash();
     }
 
     // ========================================
@@ -1744,6 +1746,159 @@ export class CityPlanner {
         text.select();
         document.execCommand('copy');
         alert('Copied to clipboard!');
+    }
+
+    // ========================================
+    // SHARE VIA URL
+    // ========================================
+
+    async shareLayout() {
+        this.cities[this.activeCityType] = this.getSnapshot();
+
+        const data = {
+            version:        '6.1',
+            activeCityType: this.activeCityType,
+            cities:         this.cities,
+            customBuildings: Object.fromEntries(
+                Object.entries(this.buildingTemplates).filter(([id]) => id.startsWith('custom_'))
+            ),
+        };
+
+        try {
+            const json       = JSON.stringify(data);
+            const encoded    = await this._compressToBase64(json);
+            const url        = `${location.origin}${location.pathname}#layout=${encoded}`;
+            document.getElementById('shareUrlText').value = url;
+            this.showModal('shareModal');
+        } catch (e) {
+            alert('Failed to generate share link: ' + e.message);
+        }
+    }
+
+    copyShareUrl() {
+        const text = document.getElementById('shareUrlText');
+        text.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('copyShareUrlBtn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
+
+    async _loadFromUrlHash() {
+        const hash = location.hash;
+        if (!hash.startsWith('#layout=')) return;
+
+        const encoded = hash.slice('#layout='.length);
+        if (!encoded) return;
+
+        try {
+            const json = await this._decompressFromBase64(encoded);
+            const data = JSON.parse(json);
+
+            if (data.customBuildings) Object.assign(this.buildingTemplates, data.customBuildings);
+
+            if (data.cities) {
+                this.cities = { main: null, settlement: null, colony: null, quantum: null, ...data.cities };
+                this.activeCityType = data.activeCityType || 'main';
+            } else {
+                this.cities = { main: null, settlement: null, colony: null, quantum: null };
+                this.activeCityType = 'main';
+                this.cities.main = {
+                    buildings:     data.buildings     || [],
+                    roads:         data.roads         || [],
+                    unlockedAreas: data.unlockedAreas || [],
+                    buildingPool:  data.buildingPool  || [],
+                    gridWidth:     data.gridWidth     || CONSTANTS.DEFAULT_GRID_SIZE,
+                    gridHeight:    data.gridHeight    || CONSTANTS.DEFAULT_GRID_SIZE,
+                    cityMetadata:  data.cityMetadata  || null,
+                };
+            }
+
+            this.restoreSnapshot(this.cities[this.activeCityType]);
+            this.updateCityTabs();
+
+            // Clear the hash so refreshing doesn't keep reloading
+            history.replaceState(null, '', location.pathname);
+
+            this._showSharedBanner();
+        } catch (e) {
+            console.warn('Failed to load layout from URL:', e);
+        }
+    }
+
+    _showSharedBanner() {
+        const banner = document.createElement('div');
+        banner.id = 'sharedBanner';
+        banner.style.cssText = `
+            position:fixed; top:0; left:0; right:0; z-index:9999;
+            background:#2a6fc9; color:#fff; text-align:center;
+            padding:10px 16px; font-size:14px; display:flex;
+            align-items:center; justify-content:center; gap:12px;
+        `;
+        banner.innerHTML = `
+            <span>📋 You're viewing a shared layout. Changes you make are local only.</span>
+            <button onclick="this.parentElement.remove()" style="
+                background:rgba(255,255,255,0.25); border:none; color:#fff;
+                padding:3px 10px; border-radius:4px; cursor:pointer; font-size:13px;
+            ">Dismiss</button>
+        `;
+        document.body.prepend(banner);
+    }
+
+    async _compressToBase64(str) {
+        const bytes   = new TextEncoder().encode(str);
+        const stream  = new CompressionStream('gzip');
+        const writer  = stream.writable.getWriter();
+        writer.write(bytes);
+        writer.close();
+
+        const chunks = [];
+        const reader = stream.readable.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+        }
+
+        const compressed = new Uint8Array(chunks.reduce((len, c) => len + c.length, 0));
+        let offset = 0;
+        for (const chunk of chunks) { compressed.set(chunk, offset); offset += chunk.length; }
+
+        // URL-safe base64
+        let binary = '';
+        const chunkSize = 0x8000;
+        for (let i = 0; i < compressed.length; i += chunkSize)
+            binary += String.fromCharCode(...compressed.subarray(i, i + chunkSize));
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    async _decompressFromBase64(b64) {
+        // Restore standard base64
+        const standard = b64.replace(/-/g, '+').replace(/_/g, '/');
+        const padded   = standard + '='.repeat((4 - standard.length % 4) % 4);
+        const binary   = atob(padded);
+        const bytes    = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+        const stream = new DecompressionStream('gzip');
+        const writer = stream.writable.getWriter();
+        writer.write(bytes);
+        writer.close();
+
+        const chunks = [];
+        const reader = stream.readable.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+        }
+
+        const out = new Uint8Array(chunks.reduce((len, c) => len + c.length, 0));
+        let offset = 0;
+        for (const chunk of chunks) { out.set(chunk, offset); offset += chunk.length; }
+        return new TextDecoder().decode(out);
     }
 
     clearAll() {

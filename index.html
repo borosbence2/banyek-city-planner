@@ -56,6 +56,7 @@
                         <button class="btn" id="loadBtn">📂 Load</button>
                         <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
                         <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
+                        <button class="btn" id="shareBtn" style="grid-column: span 2;">🔗 Share Layout</button>
                     </div>
                     <button class="btn danger" id="clearBtn">🗑 Clear All</button>
                 </div><!-- /.section-content -->
@@ -321,6 +322,19 @@
                 <button class="btn tool" id="closeModalBtn">Close</button>
                 <button class="btn" id="copyBtn" style="display:none;">Copy to Clipboard</button>
                 <button class="btn" id="loadConfirmBtn" style="display:none;">Load</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Layout Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <h2>🔗 Share Layout</h2>
+            <p>Anyone with this link can view and edit a copy of your current layout:</p>
+            <textarea id="shareUrlText" readonly style="font-size:12px;word-break:break-all;"></textarea>
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeShareModalBtn">Close</button>
+                <button class="btn" id="copyShareUrlBtn">Copy Link</button>
             </div>
         </div>
     </div>

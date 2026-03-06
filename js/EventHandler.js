@@ -160,6 +160,9 @@ export class EventHandler {
         document.getElementById('closeModalBtn').addEventListener('click', () => p.hideModal('saveLoadModal'));
         document.getElementById('copyBtn').addEventListener('click',       () => p.copyToClipboard());
         document.getElementById('loadConfirmBtn').addEventListener('click', () => p.loadLayout());
+        document.getElementById('shareBtn').addEventListener('click',          () => p.shareLayout());
+        document.getElementById('copyShareUrlBtn').addEventListener('click',   () => p.copyShareUrl());
+        document.getElementById('closeShareModalBtn').addEventListener('click', () => p.hideModal('shareModal'));
 
         // Grid
         document.getElementById('resizeBtn').addEventListener('click',      () => p.resizeGrid());
