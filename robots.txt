@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://borosbence2.github.io/banyek-city-planner/sitemap.xml
