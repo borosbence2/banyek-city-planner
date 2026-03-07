@@ -265,6 +265,10 @@ export class EventHandler {
 
         window.addEventListener('resize', () => p.resizeCanvas());
 
+        // Help / About modal
+        document.getElementById('helpBtn').addEventListener('click', () => p.showModal('helpModal'));
+        document.getElementById('closeHelpBtn').addEventListener('click', () => p.hideModal('helpModal'));
+
         // Dark mode toggle
         const darkModeBtn = document.getElementById('darkModeBtn');
         if (darkModeBtn) {

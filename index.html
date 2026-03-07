@@ -28,7 +28,10 @@
         <div class="sidebar" id="sidebar" data-city-type="main">
             <div class="sidebar-header">
                 <span class="sidebar-title">🏰 Banyek City Planner</span>
-                <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn-icon" id="helpBtn" title="How to use">❓</button>
+                    <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+                </div>
             </div>
 
             <div class="status" id="status">Mode: Select</div>
@@ -128,8 +131,8 @@
                     ⚡ Optimize <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content collapsed" id="optimizeContent">
-                    <button class="btn warning" id="optimizeBtn">
-                        ⚡ Optimize Layout
+                    <button class="btn warning" id="optimizeBtn" disabled>
+                        ⚡ Optimize Layout <span class="coming-soon-badge">Coming Soon</span>
                     </button>
                     <button class="btn tool" id="undoOptimizeBtn" style="display:none;">
                         ↩️ Undo Optimization
@@ -367,6 +370,67 @@
                 <button class="btn tool btn-small" id="closeProdOverviewBtn">✕ Close</button>
             </div>
             <div id="prodOverviewBody"></div>
+        </div>
+    </div>
+
+    <!-- Help / About Modal -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content help-modal-content">
+            <h2>❓ How to Use</h2>
+
+            <div class="help-section">
+                <h3>📥 Importing your city</h3>
+                <ol>
+                    <li>Install the <strong>FoE Helper</strong> browser extension.</li>
+                    <li>Open Forge of Empires and go to <strong>Town Overview → City Planner</strong>.</li>
+                    <li>Click <strong>"Copy citymap data"</strong> in FoE Helper.</li>
+                    <li>Click <strong>Import from FoE Helper</strong> in the sidebar, then paste.</li>
+                </ol>
+            </div>
+
+            <div class="help-section">
+                <h3>🏗️ Placing buildings</h3>
+                <ul>
+                    <li>Click a building in the list, then click on the canvas to place it.</li>
+                    <li>Right-click a placed building to duplicate, stash, or delete it.</li>
+                    <li>Drag a building off the canvas to send it to the <strong>Building Pool</strong>.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>⚡ Optimizer</h3>
+                <ul>
+                    <li>Automatically rearranges buildings to maximise road connectivity.</li>
+                    <li>Use <strong>Undo Optimization</strong> to revert if you don't like the result.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🗺️ Tabs</h3>
+                <ul>
+                    <li><strong>Main City</strong> — your regular FoE city.</li>
+                    <li><strong>Settlement</strong> — cultural settlement (choose type in the sidebar).</li>
+                    <li><strong>Colony</strong> — space colony (choose type in the sidebar).</li>
+                    <li><strong>Quantum</strong> — Quantum Incursions city.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>💾 Save &amp; Share</h3>
+                <ul>
+                    <li><strong>Save</strong> exports a JSON you can paste back to reload your layout.</li>
+                    <li><strong>Share Layout</strong> generates a URL that encodes your entire layout — paste it anywhere to share.</li>
+                    <li><strong>PNG / PDF</strong> exports a snapshot of the canvas.</li>
+                </ul>
+            </div>
+
+            <div class="help-about">
+                <strong>About:</strong> Banyek FoE City Planner is a fan-made tool, not affiliated with InnoGames or FoE Helper.
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeHelpBtn">Close</button>
+            </div>
         </div>
     </div>
 
