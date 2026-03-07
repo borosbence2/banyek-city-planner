@@ -1,4 +1,5 @@
 import { CONSTANTS, CITY_TYPES } from './constants.js';
+import { track } from './analytics.js';
 import { Utils } from './utils.js';
 import { GB_BONUSES } from '../data/gb_bonuses.js';
 import { FoeImporter } from './FoeImporter.js';
@@ -67,6 +68,7 @@ export class EventHandler {
                 this._runCityDetection(data);
                 statusEl.className = 'clipboard-status success';
                 statusEl.textContent = '✅ Data read from clipboard successfully.';
+                track('import-clipboard', 'Import: Clipboard paste');
                 document.getElementById('importFoeConfirmBtn').disabled = false;
             } catch (err) {
                 statusEl.className = 'clipboard-status error';
@@ -120,7 +122,7 @@ export class EventHandler {
             .addEventListener('click', () => p.addExpansion());
 
         // Optimizer
-        document.getElementById('optimizeBtn').addEventListener('click',     () => p.optimizer.run());
+        document.getElementById('optimizeBtn').addEventListener('click',     () => { track('optimizer-run', 'Optimizer Run'); p.optimizer.run(); });
         document.getElementById('undoOptimizeBtn').addEventListener('click', () => p.optimizer.undo());
 
         // Production overview
@@ -134,6 +136,7 @@ export class EventHandler {
             document.getElementById('efficiencyFileInput').click();
         });
         document.getElementById('efficiencyFileInput').addEventListener('change', (e) => {
+            track('import-efficiency', 'Import: Efficiency Rating');
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();

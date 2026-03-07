@@ -1,4 +1,5 @@
 import { CONSTANTS } from './constants.js';
+import { track } from './analytics.js';
 
 export class FoeImporter {
     constructor(planner) {
@@ -34,6 +35,7 @@ export class FoeImporter {
             p.restoreSnapshot(p.cities[p.activeCityType]);
             p.updateCityTabs();
             p.hideModal('importFoeModal');
+            track('import-foe', 'Import from FoE Helper');
 
             const pooled = p.buildingPool.length;
             const poolNote = pooled > 0 ? `\n${pooled} building(s) placed in the Building Pool (were outside the grid).` : '';

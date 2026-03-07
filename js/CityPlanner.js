@@ -1,4 +1,5 @@
 import { CONSTANTS, CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES } from './constants.js';
+import { track } from './analytics.js';
 export { CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES }; // re-export for convenience
 import { Utils }              from './utils.js';
 import { Renderer }           from './Renderer.js';
@@ -1330,6 +1331,7 @@ export class CityPlanner {
     }
 
     exportPNG() {
+        track('export-png', 'Export PNG');
         const dateStr = new Date().toISOString().slice(0, 10);
         const canvas = this._renderCityCanvas(3); // 3× for sharp PNG
         const a = document.createElement('a');
@@ -1341,6 +1343,7 @@ export class CityPlanner {
     }
 
     exportPDF() {
+        track('export-pdf', 'Export PDF');
         const { jsPDF } = window.jspdf;
         if (!jsPDF) { alert('PDF library not loaded yet — please try again in a moment.'); return; }
 
@@ -1708,6 +1711,7 @@ export class CityPlanner {
     }
 
     loadLayout() {
+        track('load-layout', 'Load Layout');
         try {
             const data = JSON.parse(document.getElementById('saveLoadText').value);
             if (data.customBuildings) Object.assign(this.buildingTemplates, data.customBuildings);
@@ -1752,6 +1756,7 @@ export class CityPlanner {
     // ========================================
 
     async shareLayout() {
+        track('share-layout', 'Share Layout');
         this.cities[this.activeCityType] = this.getSnapshot();
 
         const data = {
