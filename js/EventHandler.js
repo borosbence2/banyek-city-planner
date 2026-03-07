@@ -342,6 +342,52 @@ export class EventHandler {
         });
         window.addEventListener('keydown', (e) => {
 
+        // Ignore shortcuts when typing in an input/textarea
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+        // Ctrl+S — save layout
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            p.saveLayout();
+            return;
+        }
+
+        // R — road placement
+        if (e.key === 'r' || e.key === 'R') {
+            p.enterRoadPlacement();
+            return;
+        }
+
+        // W — wide road placement
+        if (e.key === 'w' || e.key === 'W') {
+            p.enterWideRoadPlacement();
+            return;
+        }
+
+        // E — expansion placement
+        if (e.key === 'e' || e.key === 'E') {
+            p.addExpansion();
+            return;
+        }
+
+        // + / = — zoom in
+        if (e.key === '+' || e.key === '=') {
+            p.zoomIn();
+            return;
+        }
+
+        // - — zoom out
+        if (e.key === '-') {
+            p.zoomOut();
+            return;
+        }
+
+        // 0 — reset view
+        if (e.key === '0') {
+            p.resetView();
+            return;
+        }
+
         // Delete selected building
         if (e.key === 'Delete') {
 
