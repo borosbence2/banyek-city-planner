@@ -286,6 +286,17 @@ export class EventHandler {
             });
         }
 
+        // Mobile sidebar toggle
+        const menuToggleBtn = document.getElementById('menuToggleBtn');
+        if (menuToggleBtn) {
+            menuToggleBtn.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('mobile-open');
+            });
+        }
+
+        // Touch support
+        this.setupTouchEvents();
+
         // Settlement and colony type pickers — initial render
         p.updateSettlementTypePicker();
         p.updateColonyTypePicker();
@@ -1191,5 +1202,133 @@ export class EventHandler {
         }
 
         return html;
+    }
+
+    // ----------------------------------------
+    // Touch support
+    // ----------------------------------------
+
+    setupTouchEvents() {
+        const canvas = this.p.canvas;
+        canvas.addEventListener('touchstart',  e => this._onTouchStart(e),  { passive: false });
+        canvas.addEventListener('touchmove',   e => this._onTouchMove(e),   { passive: false });
+        canvas.addEventListener('touchend',    e => this._onTouchEnd(e),    { passive: false });
+        canvas.addEventListener('touchcancel', e => this._onTouchEnd(e),    { passive: false });
+
+        // Close context menus on taps outside them (mirrors the existing mousedown handler)
+        document.addEventListener('touchstart', (e) => {
+            const menu = document.getElementById('ctxMenu');
+            if (menu && !menu.contains(e.target)) this._hideContextMenu();
+            const poolMenu = document.getElementById('poolCtxMenu');
+            if (poolMenu && !poolMenu.contains(e.target)) this._hidePoolContextMenu();
+            const listMenu = document.getElementById('listCtxMenu');
+            if (listMenu && !listMenu.contains(e.target)) this._hideListContextMenu();
+            const expMenu = document.getElementById('expansionCtxMenu');
+            if (expMenu && !expMenu.contains(e.target)) this._hideExpansionContextMenu();
+        }, { passive: true });
+    }
+
+    /** Build a minimal mouse-like event object from a Touch. */
+    _touchToMouse(touch) {
+        return { clientX: touch.clientX, clientY: touch.clientY, button: 0, preventDefault: () => {} };
+    }
+
+    _pinchDist(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.hypot(dx, dy);
+    }
+
+    _onTouchStart(e) {
+        e.preventDefault();
+
+        if (e.touches.length === 2) {
+            // Cancel any ongoing single-touch action
+            if (this._longPressTimer) {
+                clearTimeout(this._longPressTimer);
+                this._longPressTimer = null;
+            }
+            if (this.p.draggingBuilding || this.p.draggingRoad || this.p.draggingWideRoad || this.p.isPainting) {
+                this.handleMouseLeave();
+            }
+            this._prevPinchDist = this._pinchDist(e.touches);
+            this._prevPinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            this._prevPinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            return;
+        }
+
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            this._longPressTouchX = touch.clientX;
+            this._longPressTouchY = touch.clientY;
+            // Long-press (~500 ms) opens the context menu (right-click equivalent)
+            this._longPressTimer = setTimeout(() => {
+                this._longPressTimer = null;
+                this.handleContextMenu({
+                    preventDefault: () => {},
+                    clientX: this._longPressTouchX,
+                    clientY: this._longPressTouchY,
+                });
+            }, 500);
+            this.handleMouseDown(this._touchToMouse(touch));
+        }
+    }
+
+    _onTouchMove(e) {
+        e.preventDefault();
+
+        if (e.touches.length >= 2) {
+            const t0 = e.touches[0], t1 = e.touches[1];
+            const dist  = this._pinchDist(e.touches);
+            const midX  = (t0.clientX + t1.clientX) / 2;
+            const midY  = (t0.clientY + t1.clientY) / 2;
+            const p     = this.p;
+            const rect  = p.canvas.getBoundingClientRect();
+
+            // Zoom around the pinch midpoint
+            const pivotX  = midX - rect.left;
+            const pivotY  = midY - rect.top;
+            const scale   = dist / this._prevPinchDist;
+            const newZoom = Utils.clamp(p.zoom * scale, CONSTANTS.MIN_ZOOM, CONSTANTS.MAX_ZOOM);
+            p.panX = pivotX - (pivotX - p.panX) * (newZoom / p.zoom);
+            p.panY = pivotY - (pivotY - p.panY) * (newZoom / p.zoom);
+
+            // Pan by midpoint delta
+            p.panX += midX - this._prevPinchMidX;
+            p.panY += midY - this._prevPinchMidY;
+
+            p.zoom = newZoom;
+            this._prevPinchDist = dist;
+            this._prevPinchMidX = midX;
+            this._prevPinchMidY = midY;
+            p.renderer.draw();
+            return;
+        }
+
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            // Cancel long-press if the finger moved more than 10 px
+            if (this._longPressTimer) {
+                const dx = touch.clientX - this._longPressTouchX;
+                const dy = touch.clientY - this._longPressTouchY;
+                if (Math.hypot(dx, dy) > 10) {
+                    clearTimeout(this._longPressTimer);
+                    this._longPressTimer = null;
+                }
+            }
+            this.handleMouseMove(this._touchToMouse(touch));
+        }
+    }
+
+    _onTouchEnd(e) {
+        e.preventDefault();
+        if (this._longPressTimer) {
+            clearTimeout(this._longPressTimer);
+            this._longPressTimer = null;
+        }
+        // Only fire mouseup when the last finger is lifted
+        if (e.touches.length === 0 && e.changedTouches.length >= 1) {
+            this.handleMouseUp(this._touchToMouse(e.changedTouches[0]));
+        }
     }
 }
