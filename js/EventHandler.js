@@ -294,6 +294,14 @@ export class EventHandler {
             });
         }
 
+        // Mobile pool toggle
+        const poolToggleBtn = document.getElementById('poolToggleBtn');
+        if (poolToggleBtn) {
+            poolToggleBtn.addEventListener('click', () => {
+                document.getElementById('poolPanel').classList.toggle('mobile-open');
+            });
+        }
+
         // Touch support
         this.setupTouchEvents();
 
