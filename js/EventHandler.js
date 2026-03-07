@@ -431,6 +431,13 @@ export class EventHandler {
             return;
         }
 
+        // M — toggle minimap
+        if (e.key === 'm' || e.key === 'M') {
+            p.showMinimap = !p.showMinimap;
+            p.renderer.draw();
+            return;
+        }
+
         // Delete selected building
         if (e.key === 'Delete') {
 
@@ -469,8 +476,18 @@ export class EventHandler {
             return;
         }
 
-        // ESC cancels placement
+        // ESC — close any open modal first, otherwise cancel placement
         if (e.key === 'Escape') {
+            const MODALS = [
+                'importFoeModal', 'addBuildingModal', 'saveLoadModal',
+                'shareModal', 'efficiencyImportModal', 'prodOverviewModal', 'helpModal',
+            ];
+            const openModal = MODALS.find(id => document.getElementById(id)?.classList.contains('active'));
+            if (openModal) {
+                p.hideModal(openModal);
+                return;
+            }
+
             p.selectedTemplate = null;
             p.placingRoad = false;
             p.isPaintingRoad = false;
@@ -522,13 +539,30 @@ export class EventHandler {
             return;
         }
 
+        // Minimap click — pan view to clicked grid position
+        const canvasRect = p.canvas.getBoundingClientRect();
+        const cx = e.clientX - canvasRect.left, cy = e.clientY - canvasRect.top;
+        const mm = p.showMinimap && p.renderer._minimapBounds();
+        if (mm && cx >= mm.left && cx <= mm.left + mm.width && cy >= mm.top && cy <= mm.top + mm.height) {
+            const { gridWidth, gridHeight, gridOffsetX, gridOffsetY, cellSize, zoom } = p;
+            const gx = (cx - mm.left) / mm.width  * gridWidth  + gridOffsetX;
+            const gy = (cy - mm.top)  / mm.height * gridHeight + gridOffsetY;
+            p.panX = p.canvas.width  / 2 - gx * cellSize * zoom;
+            p.panY = p.canvas.height / 2 - gy * cellSize * zoom;
+            p.renderer.draw();
+            return;
+        }
+
         const gridPos = p.getGridCoords(e.clientX, e.clientY);
 
-        // Road placement
+        // Road placement — smart toggle: drag on existing road erases, drag on empty paints
         if (p.placingRoad) {
             p.captureSnapshot();
             p.isPaintingRoad = true;
-            p.placeRoad(gridPos);
+            const key = `${gridPos.x},${gridPos.y}`;
+            p._roadPaintErase = p.roads.has(key) || !!p._getWideRoadAnchor(gridPos.x, gridPos.y);
+            if (p._roadPaintErase) p.eraseRoadAt(gridPos.x, gridPos.y);
+            else p.placeRoad(gridPos);
             return;
         }
 
@@ -649,7 +683,8 @@ export class EventHandler {
 
         if (p.placingRoad && p.isPaintingRoad) {
             const gridPos = p.getGridCoords(e.clientX, e.clientY);
-            p.placeRoad(gridPos);
+            if (p._roadPaintErase) p.eraseRoadAt(gridPos.x, gridPos.y);
+            else p.placeRoad(gridPos);
             return;
         }
 
@@ -759,7 +794,15 @@ export class EventHandler {
                 b.x + b.width  > p.gridWidth ||
                 b.y + b.height > p.gridHeight;
 
-            if (offGrid) {
+            // Also treat dropping on locked (non-unlocked) cells as off-grid
+            const onLockedArea = !offGrid && p.unlockedCells && (() => {
+                for (let dy = 0; dy < b.height; dy++)
+                    for (let dx = 0; dx < b.width; dx++)
+                        if (!p.unlockedCells.has(`${b.x + dx},${b.y + dy}`)) return true;
+                return false;
+            })();
+
+            if (offGrid || onLockedArea) {
                 p.moveToPool(b);
                 p.updateStatus('Building moved to pool');
                 setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
@@ -967,7 +1010,9 @@ export class EventHandler {
                 const gridPos = p.getGridCoords(ev.clientX, ev.clientY);
                 if (p.canPlaceBuilding(gridPos.x, gridPos.y, copy.width, copy.height)) {
                     p.captureSnapshot();
-                    p.buildings.push({ ...copy, x: gridPos.x, y: gridPos.y });
+                    const dupEntry = { ...copy, x: gridPos.x, y: gridPos.y };
+                    p.buildings.push(dupEntry);
+                    p.renderer.triggerPlaceAnimation(dupEntry);
                     p.updateStatus(`Placed copy of ${copy.name}`);
                     setTimeout(() => p.updateStatus('Mode: Select/Move'), 1500);
                 } else {
@@ -1045,7 +1090,9 @@ export class EventHandler {
                 const gridPos = p.getGridCoords(cx, cy);
                 if (p.canPlaceBuilding(gridPos.x, gridPos.y, building.width, building.height)) {
                     p.captureSnapshot();
-                    p.buildings.push({ ...building, x: gridPos.x, y: gridPos.y });
+                    const poolEntry = { ...building, x: gridPos.x, y: gridPos.y };
+                    p.buildings.push(poolEntry);
+                    p.renderer.triggerPlaceAnimation(poolEntry);
                     p.renderer.draw();
                 }
             }

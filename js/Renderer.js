@@ -3,6 +3,58 @@ import { CONSTANTS } from './constants.js';
 export class Renderer {
     constructor(planner) {
         this.p = planner;
+        this._animations = []; // { building, startTime, duration }
+        this._rafId = null;
+    }
+
+    /** Trigger a pop animation on a newly placed building. */
+    triggerPlaceAnimation(building) {
+        this._animations.push({ building, startTime: performance.now(), duration: 300 });
+        this._startAnimLoop();
+    }
+
+    _startAnimLoop() {
+        if (this._rafId) return;
+        const tick = () => {
+            this.draw();
+            const now = performance.now();
+            this._animations = this._animations.filter(a => now - a.startTime < a.duration);
+            if (this._animations.length > 0) {
+                this._rafId = requestAnimationFrame(tick);
+            } else {
+                this._rafId = null;
+            }
+        };
+        this._rafId = requestAnimationFrame(tick);
+    }
+
+    _drawAnimations() {
+        const { ctx, cellSize } = this.p;
+        const now = performance.now();
+        for (const anim of this._animations) {
+            const { building, startTime, duration } = anim;
+            const t = Math.min((now - startTime) / duration, 1);
+            const x = building.x * cellSize;
+            const y = building.y * cellSize;
+            const w = building.width  * cellSize;
+            const h = building.height * cellSize;
+
+            // Subtle white flash, fades quickly
+            if (t < 0.3) {
+                ctx.globalAlpha = 0.2 * (1 - t / 0.3);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x, y, w, h);
+                ctx.globalAlpha = 1;
+            }
+
+            // Thin expanding ring, short reach, low opacity
+            const expand = t * cellSize * 0.6;
+            ctx.globalAlpha = (1 - t) * 0.35;
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x - expand, y - expand, w + expand * 2, h + expand * 2);
+            ctx.globalAlpha = 1;
+        }
     }
 
     get ctx() { return this.p.ctx; }
@@ -24,9 +76,96 @@ export class Renderer {
         this.drawPlacementCrosshair();
         this.drawRoads();
         this.drawBuildings();
+        this._drawAnimations();
         this.drawHoverPreview();
 
         ctx.restore();
+        if (this.p.showMinimap) this.drawMinimap();
+    }
+
+    /** Returns the minimap rectangle in canvas pixel space, clamped to fit the canvas. */
+    _minimapBounds() {
+        const { canvas, gridWidth, gridHeight } = this.p;
+        const PAD = 10;
+        const MAX_W = Math.min(160, Math.floor(canvas.width  * 0.28) - PAD);
+        const MAX_H = Math.min(120, Math.floor(canvas.height * 0.28) - PAD);
+        const ratio = gridHeight / gridWidth;
+        let w = MAX_W, h = Math.round(MAX_W * ratio);
+        if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H / ratio); }
+        w = Math.max(40, w); h = Math.max(30, h);
+        return { left: canvas.width - w - PAD, top: canvas.height - h - PAD, width: w, height: h };
+    }
+
+    drawMinimap() {
+        const { ctx, canvas, gridWidth, gridHeight, gridOffsetX, gridOffsetY,
+                cellSize, buildings, roads, panX, panY, zoom, renderMode } = this.p;
+
+        const { left: mmL, top: mmT, width: mmW, height: mmH } = this._minimapBounds();
+        const scaleX = mmW / gridWidth;
+        const scaleY = mmH / gridHeight;
+
+        // Clip everything to the minimap rect so nothing escapes it
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(mmL, mmT, mmW, mmH);
+        ctx.clip();
+
+        // Background
+        ctx.fillStyle = this.isDark ? 'rgba(15,15,28,0.88)' : 'rgba(220,225,232,0.92)';
+        ctx.fillRect(mmL, mmT, mmW, mmH);
+
+        const isRoads  = renderMode === 'roads';
+        const isExpiry = renderMode === 'expiry';
+        const reachableRoads = isRoads ? this.p.computeRoadConnectivity() : null;
+
+        // Roads
+        const roadColor = isRoads ? '#26C6DA' : (this.isDark ? '#555' : '#999');
+        for (const key of roads) {
+            const [rx, ry] = key.split(',').map(Number);
+            ctx.fillStyle = roadColor;
+            ctx.fillRect(
+                mmL + (rx - gridOffsetX) * scaleX,
+                mmT + (ry - gridOffsetY) * scaleY,
+                Math.max(1, scaleX), Math.max(1, scaleY)
+            );
+        }
+
+        // Buildings
+        for (const b of buildings) {
+            let color;
+            if (isExpiry) {
+                color = Renderer.expiryColor(b.expiration).color;
+            } else if (isRoads) {
+                color = b.needsRoad === 0 ? '#78909C'
+                      : (reachableRoads && this.p.isBuildingRoadConnected(b, reachableRoads))
+                          ? '#43A047' : '#E53935';
+            } else {
+                color = this.isDark ? (CONSTANTS.DARK_COLORS[b.type] || b.color) : b.color;
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(
+                mmL + (b.x - gridOffsetX) * scaleX,
+                mmT + (b.y - gridOffsetY) * scaleY,
+                Math.max(1, b.width  * scaleX),
+                Math.max(1, b.height * scaleY)
+            );
+        }
+
+        // Viewport rectangle (clipped automatically by the save/clip above)
+        const vl = (0             - panX) / zoom / cellSize - gridOffsetX;
+        const vt = (0             - panY) / zoom / cellSize - gridOffsetY;
+        const vr = (canvas.width  - panX) / zoom / cellSize - gridOffsetX;
+        const vb = (canvas.height - panY) / zoom / cellSize - gridOffsetY;
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(mmL + vl * scaleX, mmT + vt * scaleY, (vr - vl) * scaleX, (vb - vt) * scaleY);
+
+        ctx.restore();
+
+        // Border drawn after restore so it's always crisp on top
+        ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(mmL + 0.5, mmT + 0.5, mmW - 1, mmH - 1);
     }
 
     drawBackground() {
@@ -154,7 +293,10 @@ export class Renderer {
     }
 
     drawRoads() {
-        const { ctx, roads, wideRoads, cellSize, hoverPos, selectedRoad } = this.p;
+        const { ctx, roads, wideRoads, cellSize, hoverPos, selectedRoad, renderMode } = this.p;
+        const isRoadsMode = renderMode === 'roads';
+        const roadColor     = isRoadsMode ? '#26C6DA' : CONSTANTS.COLORS.ROAD;
+        const wideRoadColor = isRoadsMode ? '#0097A7' : (CONSTANTS.COLORS.WIDE_ROAD || '#6b6b6b');
 
         for (const roadPos of roads) {
             const [x, y] = roadPos.split(',').map(Number);
@@ -167,7 +309,7 @@ export class Renderer {
                 const bw = cellSize * 2;
                 const bh = cellSize * 2;
 
-                ctx.fillStyle = CONSTANTS.COLORS.WIDE_ROAD || '#6b6b6b';
+                ctx.fillStyle = wideRoadColor;
                 ctx.fillRect(px, py, bw, bh);
 
                 // Inner lane lines
@@ -213,7 +355,7 @@ export class Renderer {
             const py = y * cellSize;
             const isSelected = roadPos === selectedRoad;
 
-            ctx.fillStyle = CONSTANTS.COLORS.ROAD;
+            ctx.fillStyle = roadColor;
             ctx.fillRect(px, py, cellSize, cellSize);
 
             ctx.strokeStyle = '#555';
@@ -318,6 +460,10 @@ export class Renderer {
     drawBuildings() {
         const { ctx, buildings, cellSize, draggingBuilding, selectedBuilding, renderMode } = this.p;
         const isExpiry = renderMode === 'expiry';
+        const isRoads  = renderMode === 'roads';
+
+        // Pre-compute road connectivity once per draw when in roads mode
+        const reachableRoads = isRoads ? this.p.computeRoadConnectivity() : null;
 
         for (const building of buildings) {
             const w = building.width  * cellSize;
@@ -327,9 +473,20 @@ export class Renderer {
             const isSelected = selectedBuilding === building;
             const isRoadless = building.needsRoad === 0;
 
-            const fillColor = isExpiry
-                ? Renderer.expiryColor(building.expiration).color
-                : (this.isDark ? (CONSTANTS.DARK_COLORS[building.type] || building.color) : building.color);
+            let fillColor;
+            if (isExpiry) {
+                fillColor = Renderer.expiryColor(building.expiration).color;
+            } else if (isRoads) {
+                if (isRoadless) {
+                    fillColor = '#78909C'; // no road required
+                } else if (reachableRoads && this.p.isBuildingRoadConnected(building, reachableRoads)) {
+                    fillColor = '#43A047'; // connected
+                } else {
+                    fillColor = '#E53935'; // disconnected
+                }
+            } else {
+                fillColor = this.isDark ? (CONSTANTS.DARK_COLORS[building.type] || building.color) : building.color;
+            }
 
             // Free-drag: follow cursor in pixel space, snap only on release
             let x = building.x * cellSize;
@@ -354,7 +511,7 @@ export class Renderer {
 
             if (isDragging) ctx.globalAlpha = 0.75;
 
-            if (isRoadless && !isDragging && !isExpiry) {
+            if (isRoadless && !isDragging && !isExpiry && !isRoads) {
                 this.drawRoadlessBuilding(x, y, w, h, fillColor);
             } else {
                 ctx.fillStyle = fillColor;
@@ -362,14 +519,14 @@ export class Renderer {
             }
 
             // All borders inset so they never bleed onto neighbouring cells
-            if (isRoadless && !isExpiry) {
+            if (isRoadless && !isExpiry && !isRoads) {
                 ctx.strokeStyle = '#2E7D32';
                 ctx.lineWidth = 2;
                 ctx.setLineDash([8, 4]);
                 ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
                 ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = isExpiry
+                ctx.strokeStyle = (isExpiry || isRoads)
                     ? 'rgba(0,0,0,0.35)'
                     : (this.isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.45)');
                 ctx.lineWidth = 1;

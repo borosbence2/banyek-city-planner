@@ -28,3 +28,21 @@ todos before release
 - + remove expansions
 
 - cult. settlement production
+
+
+Feature	Effort	Value	FoE-specific
+Road connectivity check	Low	⭐⭐⭐	✅
+Arrow-key nudge	Tiny	⭐⭐⭐	
+Auto-save localStorage	Tiny	⭐⭐⭐	
+Road eraser tool	Tiny	⭐⭐	
+Coordinate display	Tiny	⭐⭐	
+Placement animation	Tiny	⭐ (eye candy)	
+Live grid stats bar	Low	⭐⭐	✅
+Find on canvas	Low	⭐⭐	
+Building rotation	Medium	⭐⭐⭐	✅
+Named local saves	Medium	⭐⭐⭐	
+Mini-map	Medium	⭐⭐	
+Multi-select	Large	⭐⭐⭐	
+Want me to implement any of these?
+
+- Must fix: Production

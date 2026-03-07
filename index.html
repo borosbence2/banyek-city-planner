@@ -103,27 +103,31 @@
             </div>
 
             <div id="buildingSection" class="section collapsible-section">
-                <h2 class="section-header" data-toggle="buildingContent">🏗 Buildings <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header" data-toggle="buildingContent">🏗️ Build <span class="section-arrow">▼</span></h2>
                 <div class="section-content" id="buildingContent">
-                    <!-- Placement tools -->
+                    <!-- Placement tools — always visible -->
                     <div class="tools-bar">
                         <button class="tool-btn" id="roadBtn" title="Paint 1×1 roads">+ Road</button>
                         <button class="tool-btn" id="wideRoadBtn" title="Paint 2×2 wide roads">+ Wide Road</button>
-                        <button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
+<button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
                         <button class="tool-btn" id="addBuildingBtn" title="Add a custom building">+ Custom Building</button>
                     </div>
-                    <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
-                    <div class="type-filter-grid">
-                        <button class="type-btn active" data-tab="all">All</button>
-                        <button class="type-btn" data-tab="residential">🏘<br>Res</button>
-                        <button class="type-btn" data-tab="production">🏭<br>Prod</button>
-                        <button class="type-btn" data-tab="goods">📦<br>Goods</button>
-                        <button class="type-btn" data-tab="culture">🎭<br>Cult</button>
-                        <button class="type-btn" data-tab="military">⚔<br>Mil</button>
-                        <button class="type-btn" data-tab="great">🏛<br>GB</button>
-                        <button class="type-btn" data-tab="event">✨<br>Event</button>
-                    </div>
-                    <div class="building-list" id="buildingList"></div>
+                    <!-- Buildings sub-section (collapsed by default) -->
+                    <div class="section-header collapsed" data-toggle="buildingListContent">🏗 Buildings <span class="section-arrow">▼</span></div>
+                    <div class="section-content collapsed" id="buildingListContent">
+                        <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
+                        <div class="type-filter-grid">
+                            <button class="type-btn active" data-tab="all">All</button>
+                            <button class="type-btn" data-tab="residential">🏘<br>Res</button>
+                            <button class="type-btn" data-tab="production">🏭<br>Prod</button>
+                            <button class="type-btn" data-tab="goods">📦<br>Goods</button>
+                            <button class="type-btn" data-tab="culture">🎭<br>Cult</button>
+                            <button class="type-btn" data-tab="military">⚔<br>Mil</button>
+                            <button class="type-btn" data-tab="great">🏛<br>GB</button>
+                            <button class="type-btn" data-tab="event">✨<br>Event</button>
+                        </div>
+                        <div class="building-list" id="buildingList"></div>
+                    </div><!-- /.buildingListContent -->
                 </div><!-- /.section-content -->
             </div><!-- /#buildingSection -->
 
@@ -147,24 +151,17 @@
                 </div><!-- /.section-content -->
             </div>
 
+            <!-- Map Mode — own collapsible section -->
             <div class="section collapsible-section">
-                <h2 class="section-header" data-toggle="viewContent">👁 View <span class="section-arrow">▼</span></h2>
-                <div class="section-content" id="viewContent">
-                    <div class="view-toolbar">
-                        <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
-                        <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
-                        <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
-                    </div>
-                    <p class="view-hint">💡 Scroll to zoom · Right-drag to pan</p>
-
+                <h2 class="section-header" data-toggle="mapModeContent">🗺️ Map Mode <span class="section-arrow">▼</span></h2>
+                <div class="section-content" id="mapModeContent">
                     <div id="mapModeSection">
-                        <div class="section-sublabel">🗺️ Map Mode</div>
                         <div style="display:flex;gap:4px;margin-bottom:10px;">
                             <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;">Normal</button>
                             <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;">⚡ Activity</button>
+                            <button class="btn btn-small render-mode-btn" data-mode="roads" style="flex:1;">🔗 Road Connectivity</button>
                         </div>
                     </div>
-
                     <h3 class="section-header legend-toggle" data-toggle="colorLegendContent">
                         🎨 Color Legend <span class="section-arrow">▼</span>
                     </h3>
@@ -186,7 +183,16 @@
                                     ✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.
                                 </div>
                             </div>
-                            <div class="legend-expiry" style="display:none;">
+                            <div class="legend-roads">
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#43A047;border:1px solid #999;margin-right:6px;"></span><span>Connected to Town Hall</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E53935;border:1px solid #999;margin-right:6px;"></span><span>Not connected to Town Hall</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>No road required</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#26C6DA;border:1px solid #999;margin-right:6px;"></span><span>Road / Wide Road</span></div>
+                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
+                                    Buildings must be adjacent to a road that links back to the Town Hall.
+                                </div>
+                            </div>
+                            <div class="legend-expiry">
                                 <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#37474F;border:1px solid #999;margin-right:6px;"></span><span>Inactive (upgrade ended)</span></div>
                                 <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF1744;border:1px solid #999;margin-right:6px;"></span><span>⚠ Expires in &lt; 24 hours</span></div>
                                 <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#EF5350;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 7 days</span></div>
@@ -204,6 +210,7 @@
                 </div><!-- /.section-content -->
             </div>
 
+
         </div>
 
         <div class="canvas-container">
@@ -214,6 +221,10 @@
                 <input type="number" id="gridHeight" value="20" min="10" max="200" style="width:60px;">
                 <button class="btn btn-small" id="resizeBtn">Resize</button>
                 <button class="btn btn-small" id="fitToContentBtn">Fit to Content</button>
+                <div class="controls-separator"></div>
+                <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
+                <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
+                <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
                 <div class="controls-separator"></div>
                 <button class="btn btn-small" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8634; Undo</button>
                 <button class="btn btn-small" id="redoBtn" title="Redo (Ctrl+Y)" disabled>&#8635; Redo</button>
@@ -436,8 +447,10 @@
                     <tr><td><kbd>E</kbd></td><td>Place expansion</td></tr>
                     <tr><td><kbd>Delete</kbd></td><td>Delete selected building / road</td></tr>
                     <tr><td><kbd>Esc</kbd></td><td>Cancel current placement</td></tr>
+                    <tr><td><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></td><td>Nudge selected building by 1 cell</td></tr>
                     <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Zoom in / out</td></tr>
                     <tr><td><kbd>0</kbd></td><td>Reset view</td></tr>
+                    <tr><td><kbd>M</kbd></td><td>Toggle minimap</td></tr>
                     <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save layout</td></tr>
                 </table>
             </div>

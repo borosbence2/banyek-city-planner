@@ -57,6 +57,8 @@ export class CityPlanner {
         this.isPaintingRoad   = false;
         this.placingWideRoad  = false;
         this.isPaintingWideRoad = false;
+        this._roadPaintErase  = false;
+        this.showMinimap      = true;
         this.placingExpansion = false;
         this.selectedTemplate = null;
         this.selectedBuilding = null;
@@ -124,6 +126,22 @@ export class CityPlanner {
             <strong>🛣 Road Placement Mode</strong><br>
             Drag to paint • Press ESC to exit
         `);
+    }
+
+/** Delete road at (x,y) without capturing its own snapshot — caller does that once. */
+    eraseRoadAt(x, y) {
+        const anchor = this._getWideRoadAnchor(x, y);
+        if (anchor) {
+            this.wideRoads.delete(anchor);
+            const [ax, ay] = anchor.split(',').map(Number);
+            for (let dy = 0; dy < 2; dy++)
+                for (let dx = 0; dx < 2; dx++)
+                    this.roads.delete(`${ax + dx},${ay + dy}`);
+            if (this.selectedRoad) this.selectedRoad = null;
+        } else {
+            this.roads.delete(`${x},${y}`);
+        }
+        this.renderer.draw();
     }
 
     enterWideRoadPlacement() {
@@ -380,6 +398,7 @@ export class CityPlanner {
             if (boosts && boosts.length > 0) entry.boosts = boosts;
             if (prod) entry.prod = prod;
             this.buildings.push(entry);
+            this.renderer.triggerPlaceAnimation(entry);
 
             // Townhall: exit placement after one (only one allowed)
             if (this.isTownhall(this.selectedTemplate)) {
@@ -441,6 +460,61 @@ export class CityPlanner {
         return building.type === 'townhall' || building.type === 'main_building';
     }
 
+    /**
+     * BFS through road cells starting from cells adjacent to the Town Hall.
+     * Returns a Set of "x,y" road-cell keys reachable from the Town Hall,
+     * or null if no Town Hall is on the grid.
+     */
+    computeRoadConnectivity() {
+        const th = this.buildings.find(b => this.isTownhall(b));
+        if (!th) return null;
+
+        const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+        const reachable = new Set();
+        const queue = [];
+
+        // Seed with all road cells orthogonally adjacent to the TH footprint
+        for (let bx = th.x; bx < th.x + th.width; bx++) {
+            for (let by = th.y; by < th.y + th.height; by++) {
+                for (const [dx, dy] of DIRS) {
+                    const key = `${bx + dx},${by + dy}`;
+                    if (this.roads.has(key) && !reachable.has(key)) {
+                        reachable.add(key);
+                        queue.push(key);
+                    }
+                }
+            }
+        }
+
+        // BFS through the road network
+        while (queue.length) {
+            const key = queue.shift();
+            const [cx, cy] = key.split(',').map(Number);
+            for (const [dx, dy] of DIRS) {
+                const nk = `${cx + dx},${cy + dy}`;
+                if (this.roads.has(nk) && !reachable.has(nk)) {
+                    reachable.add(nk);
+                    queue.push(nk);
+                }
+            }
+        }
+
+        return reachable;
+    }
+
+    /** Returns true if any road cell adjacent to the building's footprint is in reachableRoads. */
+    isBuildingRoadConnected(building, reachableRoads) {
+        const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (let bx = building.x; bx < building.x + building.width; bx++) {
+            for (let by = building.y; by < building.y + building.height; by++) {
+                for (const [dx, dy] of DIRS) {
+                    if (reachableRoads.has(`${bx + dx},${by + dy}`)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // ========================================
     // BUILDING POOL
     // ========================================
@@ -471,22 +545,31 @@ export class CityPlanner {
             return;
         }
 
-        const sorted = this.buildingPool
-            .map((building, idx) => ({ building, idx }))
-            .sort((a, b) => {
-                const areaA = a.building.width * a.building.height;
-                const areaB = b.building.width * b.building.height;
-                if (areaB !== areaA) return areaB - areaA; // larger first
-                return a.building.name.localeCompare(b.building.name);
-            });
+        // Group identical buildings by id (or name+size for custom ones)
+        const groups = new Map();
+        this.buildingPool.forEach((building, idx) => {
+            const key = building.id || `${building.name}:${building.width}:${building.height}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push({ building, idx });
+        });
 
-        sorted.forEach(({ building, idx }) => {
+        const sortedGroups = [...groups.values()].sort((a, b) => {
+            const areaA = a[0].building.width * a[0].building.height;
+            const areaB = b[0].building.width * b[0].building.height;
+            if (areaB !== areaA) return areaB - areaA;
+            return a[0].building.name.localeCompare(b[0].building.name);
+        });
+
+        sortedGroups.forEach((entries) => {
+            const { building, idx } = entries[0];
+            const count = entries.length;
             const item = document.createElement('div');
             item.className = 'pool-item';
             item.style.borderLeftColor = building.color || '#ccc';
             item.innerHTML = `
                 <span class="pool-item-name" title="${building.name}">${building.name}</span>
                 <span class="pool-item-size">${building.width}×${building.height}</span>
+                ${count > 1 ? `<span class="pool-item-count">×${count}</span>` : ''}
             `;
             item.addEventListener('mousedown', (e) => {
                 if (e.button !== 0) return;
@@ -738,9 +821,20 @@ export class CityPlanner {
     }
 
     resizeCanvas() {
-        const container = this.canvas.parentElement;
-        this.canvas.width  = container.clientWidth;
-        this.canvas.height = container.clientHeight;
+        const container  = this.canvas.parentElement;
+        const cs         = getComputedStyle(container);
+        const ccs        = getComputedStyle(this.canvas);
+        const controlsEl = container.querySelector('.controls');
+        const controlsH  = controlsEl
+            ? controlsEl.offsetHeight + parseFloat(getComputedStyle(controlsEl).marginBottom)
+            : 0;
+        this.canvas.width  = container.clientWidth
+            - parseFloat(cs.paddingLeft)      - parseFloat(cs.paddingRight)
+            - parseFloat(ccs.borderLeftWidth) - parseFloat(ccs.borderRightWidth);
+        this.canvas.height = container.clientHeight
+            - parseFloat(cs.paddingTop)       - parseFloat(cs.paddingBottom)
+            - parseFloat(ccs.borderTopWidth)  - parseFloat(ccs.borderBottomWidth)
+            - controlsH;
         this.renderer.draw();
     }
 
@@ -2083,6 +2177,7 @@ export class CityPlanner {
         this.isPaintingRoad     = false;
         this.placingWideRoad    = false;
         this.isPaintingWideRoad = false;
+        this._roadPaintErase    = false;
         this.placingExpansion   = false;
         this.hoverPos           = null;
         this.hideModeBanner();
