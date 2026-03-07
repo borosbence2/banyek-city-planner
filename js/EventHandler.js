@@ -453,6 +453,22 @@ export class EventHandler {
             p.renderer.draw();
         }
 
+        // Arrow keys — nudge selected building by 1 square
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) && p.selectedBuilding) {
+            e.preventDefault();
+            const b = p.selectedBuilding;
+            const dx = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+            const dy = e.key === 'ArrowUp'   ? -1 : e.key === 'ArrowDown'  ? 1 : 0;
+            const nx = b.x + dx, ny = b.y + dy;
+            if (p.canPlaceBuilding(nx, ny, b.width, b.height, b)) {
+                p.captureSnapshot();
+                b.x = nx;
+                b.y = ny;
+                p.renderer.draw();
+            }
+            return;
+        }
+
         // ESC cancels placement
         if (e.key === 'Escape') {
             p.selectedTemplate = null;
