@@ -1341,7 +1341,6 @@ export class CityPlanner {
     }
 
     exportPDF() {
-        // jsPDF is loaded as a UMD global from CDN
         const { jsPDF } = window.jspdf;
         if (!jsPDF) { alert('PDF library not loaded yet — please try again in a moment.'); return; }
 

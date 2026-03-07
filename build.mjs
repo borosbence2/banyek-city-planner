@@ -12,6 +12,9 @@ mkdirSync('dist/assets', { recursive: true });
 cpSync('css',    'dist/css',    { recursive: true });
 cpSync('assets', 'dist/assets', { recursive: true });
 
+// Copy jsPDF pre-built UMD file from node_modules (avoids CDN dependency)
+cpSync('node_modules/jspdf/dist/jspdf.umd.min.js', 'dist/jspdf.umd.min.js');
+
 // Copy root-level verification / SEO files if they exist
 import { existsSync } from 'fs';
 for (const file of ['robots.txt', '404.html']) {
@@ -26,6 +29,10 @@ for (const file of readdirSync('.')) {
 // 3. Patch index.html — swap the module script tag for the bundle
 console.log('Patching index.html...');
 const html = readFileSync('index.html', 'utf8')
+    .replace(
+        '<script src="node_modules/jspdf/dist/jspdf.umd.min.js"></script>',
+        '<script src="jspdf.umd.min.js"></script>'
+    )
     .replace(
         '<script type="module" src="js/main.js"></script>',
         '<script src="bundle.js"></script>'
