@@ -490,6 +490,13 @@ body {
     overflow: auto;
 }
 
+.controls-separator {
+    width: 1px;
+    height: 20px;
+    background: #ccc;
+    margin: 0 4px;
+}
+
 .controls {
     margin-bottom: 15px;
     display: flex;
@@ -1328,6 +1335,7 @@ canvas.pool-drag-over {
     border-radius: 12px 12px 0 0;
 }
 
+
 .city-tab {
     position: relative;
     padding: 6px 14px;
@@ -1953,8 +1961,9 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
    RESPONSIVE / MOBILE  (≤ 768 px)
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Hamburger button — hidden on desktop, shown by media query on mobile */
-.menu-toggle-btn {
+/* Toggle buttons — hidden on desktop, shown by media query on mobile */
+.menu-toggle-btn,
+.pool-toggle-btn {
     display: none;
     font-size: 18px;
     padding: 6px 12px;
@@ -1969,7 +1978,7 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
 
     .container {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto 1fr auto;
         border-radius: 0;
         max-width: 100%;
         max-height: 100dvh;
@@ -1985,11 +1994,12 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
         flex-wrap: nowrap;
     }
 
-    .menu-toggle-btn {
+    .menu-toggle-btn,
+    .pool-toggle-btn {
         display: flex;
     }
 
-    /* Sidebar becomes a collapsible drawer */
+    /* Sidebar — collapsible top drawer, open by default */
     .sidebar {
         grid-column: 1;
         grid-row: 2;
@@ -2008,7 +2018,7 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
         overflow-y: auto;
     }
 
-    /* Canvas fills remaining space */
+    /* Canvas fills the main area */
     .canvas-container {
         grid-column: 1;
         grid-row: 3;
@@ -2017,17 +2027,28 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
         overflow: auto;
     }
 
-    /* Pool panel hidden on mobile (accessible via drag-off-canvas to pool still works) */
+    /* Pool panel — collapsible bottom drawer, hidden by default */
     .pool-panel {
-        display: none;
+        grid-column: 1;
+        grid-row: 4;
+        border-left: none;
+        border-top: 2px solid #dee2e6;
+        border-radius: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        display: flex;
+    }
+
+    .pool-panel.mobile-open {
+        max-height: 40vh;
     }
 }
 
-/* Dark-mode adjustments for mobile sidebar drawer */
+/* Dark-mode adjustments for mobile drawers */
 @media (max-width: 768px) {
-    body.dark .sidebar {
-        border-bottom-color: #3a3a52;
-    }
+    body.dark .sidebar    { border-bottom-color: #3a3a52; }
+    body.dark .pool-panel { border-top-color:    #3a3a52; }
 }
 
 /* ── End Responsive ──────────────────────────────────────────────────────── */
