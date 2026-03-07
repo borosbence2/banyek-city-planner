@@ -324,33 +324,34 @@ export class EventHandler {
         });
 
         document.querySelectorAll('.section-header[data-toggle]').forEach(header => {
-            header.addEventListener('click', () => {
+            const toggle = (e) => {
+                if (e.type === 'touchend') e.preventDefault(); // suppress synthetic click
                 const content = document.getElementById(header.dataset.toggle);
                 if (!content) return;
                 const isCollapsed = content.classList.contains('collapsed');
 
                 if (isCollapsed) {
-                    // Expand: remove class first so scrollHeight reflects full content
                     content.classList.remove('collapsed');
                     const fullH = content.scrollHeight;
-                    content.offsetHeight; // force reflow so transition starts from 0
+                    content.offsetHeight;
                     content.style.maxHeight = fullH + 'px';
                     const onEnd = (e) => {
                         if (e.propertyName !== 'max-height') return;
-                        content.style.maxHeight = ''; // unconstrain after animation
+                        content.style.maxHeight = '';
                         content.removeEventListener('transitionend', onEnd);
                     };
                     content.addEventListener('transitionend', onEnd);
                 } else {
-                    // Collapse: lock to current height, then animate to 0
                     content.style.maxHeight = content.scrollHeight + 'px';
-                    content.offsetHeight; // force reflow
+                    content.offsetHeight;
                     content.classList.add('collapsed');
                     content.style.maxHeight = '0px';
                 }
 
                 header.classList.toggle('collapsed', !isCollapsed);
-            });
+            };
+            header.addEventListener('click', toggle);
+            header.addEventListener('touchend', toggle, { passive: false });
         });
 
         // If the user releases the mouse outside the canvas while dragging, send to pool
@@ -965,6 +966,79 @@ export class EventHandler {
         ghost.style.top  = '-9999px';
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup',   up);
+    }
+
+    /**
+     * Drag a building template from the building list onto the canvas.
+     * Short click (no movement) falls back to enterBuildingPlacement.
+     * Works with both mouse and touch.
+     */
+    _startListDrag(startX, startY, building) {
+        const p = this.p;
+        let dragging = false;
+
+        const ghost = document.createElement('div');
+        ghost.className = 'pool-drag-ghost';
+        ghost.textContent = building.name;
+        ghost.style.background = building.color || '#ccc';
+        ghost.style.left = (startX + 12) + 'px';
+        ghost.style.top  = (startY + 12) + 'px';
+        document.body.appendChild(ghost);
+
+        const getXY = (ev) => ev.changedTouches
+            ? { cx: ev.changedTouches[0].clientX, cy: ev.changedTouches[0].clientY }
+            : ev.touches
+                ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
+                : { cx: ev.clientX, cy: ev.clientY };
+
+        const move = (ev) => {
+            const { cx, cy } = getXY(ev);
+            if (!dragging && Math.hypot(cx - startX, cy - startY) > 5) dragging = true;
+            ghost.style.left = (cx + 12) + 'px';
+            ghost.style.top  = (cy + 12) + 'px';
+            const rect = p.canvas.getBoundingClientRect();
+            const over = cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom;
+            p.canvas.classList.toggle('pool-drag-over', over);
+            if (over) { p.hoverPos = p.getGridCoords(cx, cy); p._poolDragTemplate = building; }
+            else      { p.hoverPos = null; p._poolDragTemplate = null; }
+            p.renderer.draw();
+            if (ev.touches) ev.preventDefault();
+        };
+
+        const up = (ev) => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup',   up);
+            document.removeEventListener('touchmove', move);
+            document.removeEventListener('touchend',  up);
+            ghost.remove();
+            p.canvas.classList.remove('pool-drag-over');
+            p.hoverPos = null;
+            p._poolDragTemplate = null;
+
+            const { cx, cy } = getXY(ev);
+
+            if (!dragging) {
+                // Treat as a click — enter placement mode
+                p.enterBuildingPlacement(building);
+                p.renderer.draw();
+                return;
+            }
+
+            const rect = p.canvas.getBoundingClientRect();
+            if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
+                const gridPos = p.getGridCoords(cx, cy);
+                if (p.canPlaceBuilding(gridPos.x, gridPos.y, building.width, building.height)) {
+                    p.captureSnapshot();
+                    p.buildings.push({ ...building, x: gridPos.x, y: gridPos.y });
+                    p.renderer.draw();
+                }
+            }
+        };
+
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup',   up);
+        document.addEventListener('touchmove', move, { passive: false });
+        document.addEventListener('touchend',  up);
     }
 
     _updateCursorForHover(gridPos) {

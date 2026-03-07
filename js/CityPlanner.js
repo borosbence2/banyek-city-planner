@@ -960,9 +960,16 @@ export class CityPlanner {
             }
         }
 
-        btn.addEventListener('click', () => {
-            this.enterBuildingPlacement({ ...building, id });
+        btn.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            this.events._startListDrag(e.clientX, e.clientY, { ...building, id });
         });
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            this.events._startListDrag(t.clientX, t.clientY, { ...building, id });
+        }, { passive: false });
         btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             this._listCtxBuilding = { ...building, id };
