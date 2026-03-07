@@ -23,6 +23,7 @@ body {
     grid-template-rows: auto 1fr;
     max-width: 1600px;
     width: 100%;
+    height: 90vh;
     max-height: 90vh;
 }
 
@@ -33,9 +34,9 @@ body {
 }
 
 /* Main content row */
-.sidebar         { grid-column: 1; grid-row: 2; }
-.canvas-container { grid-column: 2; grid-row: 2; }
-.pool-panel      { grid-column: 3; grid-row: 2; }
+.sidebar         { grid-column: 1; grid-row: 2; min-height: 0; }
+.canvas-container { grid-column: 2; grid-row: 2; min-height: 0; }
+.pool-panel      { grid-column: 3; grid-row: 2; min-height: 0; }
 
 .sidebar {
     padding: 15px;
@@ -301,8 +302,10 @@ body {
     pointer-events: none;
 }
 
-.section h2 {
+.section h2,
+.section .section-header {
     font-size: 12px;
+    font-weight: bold;
     color: #666;
     margin-bottom: 4px;
     text-transform: uppercase;
@@ -487,7 +490,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .controls-separator {
@@ -1221,6 +1224,16 @@ body.dark .help-about { background: #1e1e2e; color: #8080a0; }
     flex-shrink: 0;
 }
 
+.pool-item-count {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    background: #5a7bb5;
+    border-radius: 10px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+}
+
 .pool-empty {
     text-align: center;
     color: #bbb;
@@ -1314,13 +1327,18 @@ canvas.pool-drag-over {
 
 /* ── Render Mode / Legend switching ─────────────────────────────────────── */
 
-/* By default show normal legend, hide expiry legend */
+/* By default show normal legend, hide others */
 #colorLegend .legend-expiry { display: none; }
+#colorLegend .legend-roads  { display: none; }
 #colorLegend .legend-normal { display: block; }
 
 /* When data-mode="expiry", swap */
 #colorLegend[data-mode="expiry"] .legend-normal { display: none; }
 #colorLegend[data-mode="expiry"] .legend-expiry { display: block; }
+
+/* When data-mode="roads", swap */
+#colorLegend[data-mode="roads"] .legend-normal { display: none; }
+#colorLegend[data-mode="roads"] .legend-roads  { display: block; }
 
 /* ── End Render Mode ─────────────────────────────────────────────────────── */
 
@@ -1843,6 +1861,10 @@ body.dark .pool-item-size {
     color: #606090;
 }
 
+body.dark .pool-item-count {
+    background: #3a5a9a;
+}
+
 body.dark .pool-empty {
     color: #505078;
 }
@@ -2024,7 +2046,7 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
         grid-row: 3;
         padding: 8px;
         width: 100%;
-        overflow: auto;
+        overflow: hidden;
     }
 
     /* Pool panel — collapsible bottom drawer, hidden by default */
