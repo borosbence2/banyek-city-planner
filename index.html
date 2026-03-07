@@ -112,7 +112,6 @@
                         <button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
                         <button class="tool-btn" id="addBuildingBtn" title="Add a custom building">+ Custom Building</button>
                     </div>
-
                     <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
                     <div class="type-filter-grid">
                         <button class="type-btn active" data-tab="all">All</button>
@@ -215,6 +214,9 @@
                 <input type="number" id="gridHeight" value="20" min="10" max="200" style="width:60px;">
                 <button class="btn btn-small" id="resizeBtn">Resize</button>
                 <button class="btn btn-small" id="fitToContentBtn">Fit to Content</button>
+                <div class="controls-separator"></div>
+                <button class="btn btn-small" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8634; Undo</button>
+                <button class="btn btn-small" id="redoBtn" title="Redo (Ctrl+Y)" disabled>&#8635; Redo</button>
             </div>
             <canvas id="cityCanvas" width="600" height="600"></canvas>
         </div>

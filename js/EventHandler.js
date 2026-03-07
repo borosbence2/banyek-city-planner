@@ -121,6 +121,10 @@ export class EventHandler {
         document.getElementById('addExpansionBtn')
             .addEventListener('click', () => p.addExpansion());
 
+        // Undo / Redo buttons
+        document.getElementById('undoBtn').addEventListener('click', () => p.undoHistory.undo());
+        document.getElementById('redoBtn').addEventListener('click', () => p.undoHistory.redo());
+
         // Optimizer
         document.getElementById('optimizeBtn').addEventListener('click',     () => { track('optimizer-run', 'Optimizer Run'); p.optimizer.run(); });
         document.getElementById('undoOptimizeBtn').addEventListener('click', () => p.optimizer.undo());
@@ -203,6 +207,7 @@ export class EventHandler {
 
         document.getElementById('ctxDelete').addEventListener('click', () => {
             if (this._ctxBuilding) {
+                p.captureSnapshot();
                 if (p.isTownhall(this._ctxBuilding)) {
                     // Townhall can't be deleted — stash to pool instead
                     p.moveToPool(this._ctxBuilding);
@@ -219,7 +224,10 @@ export class EventHandler {
         });
 
         document.getElementById('ctxStash').addEventListener('click', () => {
-            if (this._ctxBuilding) p.moveToPool(this._ctxBuilding);
+            if (this._ctxBuilding) {
+                p.captureSnapshot();
+                p.moveToPool(this._ctxBuilding);
+            }
             this._hideContextMenu();
         });
 
@@ -236,6 +244,7 @@ export class EventHandler {
         });
         document.getElementById('poolCtxRemove').addEventListener('click', () => {
             if (p._poolCtxIdx !== null) {
+                p.captureSnapshot();
                 p.buildingPool.splice(p._poolCtxIdx, 1);
                 p.updatePoolPanel();
                 p.renderer.draw();
@@ -364,6 +373,20 @@ export class EventHandler {
         // Ignore shortcuts when typing in an input/textarea
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
+        // Ctrl+Z — undo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            p.undoHistory.undo();
+            return;
+        }
+
+        // Ctrl+Y / Ctrl+Shift+Z — redo
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            p.undoHistory.redo();
+            return;
+        }
+
         // Ctrl+S — save layout
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
@@ -411,6 +434,7 @@ export class EventHandler {
         if (e.key === 'Delete') {
 
             if (p.selectedBuilding) {
+                p.captureSnapshot();
                 if (p.isTownhall(p.selectedBuilding)) {
                     p.moveToPool(p.selectedBuilding);
                 } else {
@@ -421,7 +445,7 @@ export class EventHandler {
 
             else if (p.selectedRoad) {
                 const [rx, ry] = p.selectedRoad.split(',').map(Number);
-                p.removeRoadAt(rx, ry); // handles both narrow and wide roads
+                p.removeRoadAt(rx, ry); // handles both narrow and wide roads — also captures
             }
 
             p.updateSelectionBanner();
@@ -485,6 +509,7 @@ export class EventHandler {
 
         // Road placement
         if (p.placingRoad) {
+            p.captureSnapshot();
             p.isPaintingRoad = true;
             p.placeRoad(gridPos);
             return;
@@ -492,6 +517,7 @@ export class EventHandler {
 
         // Wide road placement
         if (p.placingWideRoad) {
+            p.captureSnapshot();
             p.isPaintingWideRoad = true;
             p.placeWideRoad(gridPos);
             return;
@@ -518,6 +544,7 @@ export class EventHandler {
             gridPos.y >= b.y && gridPos.y < b.y + b.height
         );
         if (clickedBuilding) {
+            p.captureSnapshot();
             p.selectedBuilding = clickedBuilding;
             p.selectedRoad = null;
             p.draggingBuilding = clickedBuilding;
@@ -533,6 +560,7 @@ export class EventHandler {
         // Check if clicking on any road — select and start drag
         const roadKey = `${gridPos.x},${gridPos.y}`;
         if (p.roads.has(roadKey)) {
+            p.captureSnapshot();
             p.selectedBuilding = null;
             const wideAnchor = p._getWideRoadAnchor(gridPos.x, gridPos.y);
             if (wideAnchor) {
@@ -638,12 +666,16 @@ export class EventHandler {
             const snapPos = p.getGridCoords(e.clientX, e.clientY);
             const newX = snapPos.x;
             const newY = snapPos.y;
+            const { x: rsx, y: rsy } = p.roadDragStart;
             if (newX >= 0 && newY >= 0 && newX < p.gridWidth && newY < p.gridHeight &&
                 p.isCellUnlocked(newX, newY) && !p.isBuildingAt(newX, newY)
             ) {
                 p.roads.add(`${newX},${newY}`);
+                if (newX === rsx && newY === rsy) p.undoHistory.discard(); // no net change
             } else {
-                p.roads.add(`${p.roadDragStart.x},${p.roadDragStart.y}`);
+                // Restore original position — no net change
+                p.undoHistory.discard();
+                p.roads.add(`${rsx},${rsy}`);
             }
             p.draggingRoad = null;
             p.roadDragStart = null;
@@ -669,8 +701,10 @@ export class EventHandler {
                     for (let dx = 0; dx < 2; dx++)
                         p.roads.add(`${newX + dx},${newY + dy}`);
                 p.selectedRoad = newAnchor;
+                if (newX === sx && newY === sy) p.undoHistory.discard(); // no net change
             } else {
-                // Restore original position
+                // Restore original position — no net change
+                p.undoHistory.discard();
                 const origAnchor = `${sx},${sy}`;
                 p.wideRoads.add(origAnchor);
                 for (let dy = 0; dy < 2; dy++)
@@ -713,10 +747,15 @@ export class EventHandler {
                 p.updateStatus('Building moved to pool');
                 setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
             } else if (!p.canPlaceBuilding(b.x, b.y, b.width, b.height, b)) {
+                // Snapped back — no net change, discard the captured snapshot
+                p.undoHistory.discard();
                 b.x = p.dragStartPos.x;
                 b.y = p.dragStartPos.y;
                 p.updateStatus('Invalid placement — building returned to original position');
                 setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
+            } else if (b.x === p.dragStartPos.x && b.y === p.dragStartPos.y) {
+                // Dropped on same cell (just a click) — no net change, discard
+                p.undoHistory.discard();
             }
             p.draggingBuilding = null;
             p.canvas.style.cursor = 'default';
@@ -910,6 +949,7 @@ export class EventHandler {
             if (overCanvas) {
                 const gridPos = p.getGridCoords(ev.clientX, ev.clientY);
                 if (p.canPlaceBuilding(gridPos.x, gridPos.y, copy.width, copy.height)) {
+                    p.captureSnapshot();
                     p.buildings.push({ ...copy, x: gridPos.x, y: gridPos.y });
                     p.updateStatus(`Placed copy of ${copy.name}`);
                     setTimeout(() => p.updateStatus('Mode: Select/Move'), 1500);

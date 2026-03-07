@@ -490,6 +490,13 @@ body {
     overflow: auto;
 }
 
+.controls-separator {
+    width: 1px;
+    height: 20px;
+    background: #ccc;
+    margin: 0 4px;
+}
+
 .controls {
     margin-bottom: 15px;
     display: flex;
@@ -1327,6 +1334,7 @@ canvas.pool-drag-over {
     border-bottom: 2px solid #dee2e6;
     border-radius: 12px 12px 0 0;
 }
+
 
 .city-tab {
     position: relative;

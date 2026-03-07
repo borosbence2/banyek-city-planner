@@ -6,6 +6,7 @@ import { Renderer }           from './Renderer.js';
 import { EventHandler }       from './EventHandler.js';
 import { FoeImporter }        from './FoeImporter.js';
 import { Optimizer }          from './Optimizer.js';
+import { UndoHistory }        from './UndoHistory.js';
 import { ProductionOverview } from './ProductionOverview.js';
 import { BUILDINGS }          from '../data/foe_buildings_database.js';
 import { QI_BUILDINGS }       from '../data/qi_buildings_database.js';
@@ -90,6 +91,7 @@ export class CityPlanner {
         this.events           = new EventHandler(this);
         this.importer         = new FoeImporter(this);
         this.optimizer        = new Optimizer(this);
+        this.undoHistory      = new UndoHistory(this);
         this.productionOverview = new ProductionOverview(this);
 
         this._placeDefaultTownhall();
@@ -191,6 +193,7 @@ export class CityPlanner {
      * For wide roads, removes the entire 2×2 block.
      */
     removeRoadAt(x, y) {
+        this.captureSnapshot();
         const anchor = this._getWideRoadAnchor(x, y);
         if (anchor) {
             this.wideRoads.delete(anchor);
@@ -364,12 +367,15 @@ export class CityPlanner {
         );
     }
 
+    captureSnapshot() { this.undoHistory.capture(); }
+
     // ========================================
     // BUILDING OPERATIONS
     // ========================================
     placeBuilding(gridPos) {
         const { id, width, height, name, color, type, age, needsRoad = 1, boosts, prod } = this.selectedTemplate;
         if (this.canPlaceBuilding(gridPos.x, gridPos.y, width, height)) {
+            this.captureSnapshot();
             const entry = { id, x: gridPos.x, y: gridPos.y, width, height, name, color, type, age, needsRoad };
             if (boosts && boosts.length > 0) entry.boosts = boosts;
             if (prod) entry.prod = prod;
@@ -575,6 +581,7 @@ export class CityPlanner {
                 const gridPos = this.getGridCoords(ev.clientX, ev.clientY);
                 if (this.canPlaceBuilding(gridPos.x, gridPos.y, building.width, building.height)) {
                     // Place onto grid and remove from pool
+                    this.captureSnapshot();
                     this.buildingPool.splice(poolIdx, 1);
                     this.buildings.push({ ...building, x: gridPos.x, y: gridPos.y });
                     this.updatePoolPanel();
@@ -676,6 +683,7 @@ export class CityPlanner {
         // Don't place a duplicate at the same position
         if (this.unlockedAreas.some(a => a.x === x && a.y === y)) return;
 
+        this.captureSnapshot();
         const nextIndex = this.unlockedAreas.filter(a => !a.autoTiled).length;
         this.unlockedAreas.push({ x, y, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true });
         this.rebuildUnlockedCells(); // also calls _recomputeGridBounds
@@ -686,6 +694,7 @@ export class CityPlanner {
 
     /** Remove a manual expansion block, moving any overlapping buildings to the pool. */
     removeExpansion(area) {
+        this.captureSnapshot();
         const S = 4; // EXPANSION_SIZE
         // Find buildings that intersect this 4×4 block
         const displaced = this.buildings.filter(b =>
