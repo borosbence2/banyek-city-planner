@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banyek City Planner</title>
+    <link rel="icon" type="image/png" href="assets/rang.png">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div id="cityTabBar">
+            <button class="city-tab active" data-city="main">🏙️ Main City</button>
+            <button class="city-tab" data-city="settlement">🏛️ Settlement</button>
+            <button class="city-tab" data-city="colony">🚀 Colony</button>
+            <button class="city-tab" data-city="quantum">⚡ Quantum</button>
+        </div>
+
+        <div class="sidebar" id="sidebar" data-city-type="main">
+            <div class="sidebar-header">
+                <span class="sidebar-title">🏰 Banyek City Planner</span>
+                <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+            </div>
+
+            <div class="status" id="status">Mode: Select</div>
+
+            <div class="city-info" id="cityInfo" style="display:none;">
+                <strong>Imported City Info:</strong><br>
+                <span id="cityInfoText"></span>
+            </div>
+
+            <!-- Production overview — promoted to always visible -->
+            <button class="btn prod-btn" id="prodOverviewBtn">📊 Production Overview</button>
+
+            <!-- Import — always visible -->
+            <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
+            <div class="import-group">
+                <div class="import-group-label">📥 Import</div>
+                <button class="btn success import-main-btn" id="importFoeBtn">Import from FoE Helper</button>
+                <div class="efficiency-row">
+                    <button class="btn" id="importEfficiencyBtn">📋 Efficiency Rating</button>
+                    <label class="efficiency-tile-check" title="Check if exported with 'Value/tile' enabled">
+                        <input type="checkbox" id="efficiencyPerTile" checked> per-tile
+                    </label>
+                </div>
+            </div>
+
+            <!-- Save / Export — collapsed by default -->
+            <div class="section collapsible-section">
+                <h2 class="section-header collapsed" data-toggle="fileContent">
+                    💾 Save / Export <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content collapsed" id="fileContent">
+                    <div class="file-btn-grid">
+                        <button class="btn" id="saveBtn">💾 Save</button>
+                        <button class="btn" id="loadBtn">📂 Load</button>
+                        <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
+                        <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
+                        <button class="btn" id="shareBtn" style="grid-column: span 2;">🔗 Share Layout</button>
+                    </div>
+                    <button class="btn danger" id="clearBtn">🗑 Clear All</button>
+                </div><!-- /.section-content -->
+            </div>
+
+            <!-- Settlement type picker — visible only when settlement tab is active -->
+            <div id="settlementTypeSection" class="section">
+                <h2 class="section-header" data-toggle="settlementTypeContent">
+                    🏛️ Settlement Type <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="settlementTypeContent">
+                    <div class="settlement-type-grid" id="settlementTypeGrid">
+                        <!-- Populated by JS from SETTLEMENT_TYPES -->
+                    </div>
+                    <div class="settlement-note" id="settlementNote"></div>
+                </div>
+            </div>
+
+            <!-- Colony type picker — visible only when colony tab is active -->
+            <div id="colonyTypeSection" class="section">
+                <h2 class="section-header" data-toggle="colonyTypeContent">
+                    🚀 Colony Type <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content" id="colonyTypeContent">
+                    <div class="settlement-type-grid" id="colonyTypeGrid">
+                        <!-- Populated by JS from COLONY_TYPES -->
+                    </div>
+                    <div class="settlement-note" id="colonyNote"></div>
+                </div>
+            </div>
+
+            <div id="buildingSection" class="section collapsible-section">
+                <h2 class="section-header" data-toggle="buildingContent">🏗 Buildings <span class="section-arrow">▼</span></h2>
+                <div class="section-content" id="buildingContent">
+                    <!-- Placement tools -->
+                    <div class="tools-bar">
+                        <button class="tool-btn" id="roadBtn" title="Paint 1×1 roads">+ Road</button>
+                        <button class="tool-btn" id="wideRoadBtn" title="Paint 2×2 wide roads">+ Wide Road</button>
+                        <button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
+                        <button class="tool-btn" id="addBuildingBtn" title="Add a custom building">+ Custom Building</button>
+                    </div>
+
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
+                    <div class="type-filter-grid">
+                        <button class="type-btn active" data-tab="all">All</button>
+                        <button class="type-btn" data-tab="residential">🏘<br>Res</button>
+                        <button class="type-btn" data-tab="production">🏭<br>Prod</button>
+                        <button class="type-btn" data-tab="goods">📦<br>Goods</button>
+                        <button class="type-btn" data-tab="culture">🎭<br>Cult</button>
+                        <button class="type-btn" data-tab="military">⚔<br>Mil</button>
+                        <button class="type-btn" data-tab="great">🏛<br>GB</button>
+                        <button class="type-btn" data-tab="event">✨<br>Event</button>
+                    </div>
+                    <div class="building-list" id="buildingList"></div>
+                </div><!-- /.section-content -->
+            </div><!-- /#buildingSection -->
+
+            <div class="section collapsible-section">
+                <h2 class="section-header collapsed" data-toggle="optimizeContent">
+                    ⚡ Optimize <span class="section-arrow">▼</span>
+                </h2>
+                <div class="section-content collapsed" id="optimizeContent">
+                    <button class="btn warning" id="optimizeBtn" disabled>
+                        ⚡ Optimize Layout <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                    <button class="btn tool" id="undoOptimizeBtn" style="display:none;">
+                        ↩️ Undo Optimization
+                    </button>
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Initializing...</div>
+                    </div>
+                </div><!-- /.section-content -->
+            </div>
+
+            <div class="section collapsible-section">
+                <h2 class="section-header" data-toggle="viewContent">👁 View <span class="section-arrow">▼</span></h2>
+                <div class="section-content" id="viewContent">
+                    <div class="view-toolbar">
+                        <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
+                        <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
+                        <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
+                    </div>
+                    <p class="view-hint">💡 Scroll to zoom · Right-drag to pan</p>
+
+                    <div id="mapModeSection">
+                        <div class="section-sublabel">🗺️ Map Mode</div>
+                        <div style="display:flex;gap:4px;margin-bottom:10px;">
+                            <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;">Normal</button>
+                            <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;">⚡ Activity</button>
+                        </div>
+                    </div>
+
+                    <h3 class="section-header legend-toggle" data-toggle="colorLegendContent">
+                        🎨 Color Legend <span class="section-arrow">▼</span>
+                    </h3>
+                    <div id="colorLegendContent" class="section-content">
+                        <div id="colorLegend" data-mode="normal" style="font-size:10px;line-height:1.6;">
+                            <div class="legend-normal">
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#87CEEB;border:1px solid #999;margin-right:6px;"></span><span>Residential 🏘️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#5F8DC3;border:1px solid #999;margin-right:6px;"></span><span>Production 🏭</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#F4E16B;border:1px solid #999;margin-right:6px;"></span><span>Goods 📦</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6B8E7F;border:1px solid #999;margin-right:6px;"></span><span>Culture / Decorations 🎭</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#8B7BAA;border:1px solid #999;margin-right:6px;"></span><span>Military ⚔️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D46A4F;border:1px solid #999;margin-right:6px;"></span><span>Great Buildings 🏛️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E8D679;border:1px solid #999;margin-right:6px;"></span><span>Town Hall 🏛️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D4884B;border:1px solid #999;margin-right:6px;"></span><span>Event Buildings ✨</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#808080;border:1px solid #999;margin-right:6px;"></span><span>Roads 🛣️</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6b6b6b;border:1px solid #999;margin-right:6px;"></span><span>Wide Roads (2×2) 🛤️</span></div>
+                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
+                                    💡 Colors match FoE Helper<br>
+                                    ✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.
+                                </div>
+                            </div>
+                            <div class="legend-expiry" style="display:none;">
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#37474F;border:1px solid #999;margin-right:6px;"></span><span>Inactive (upgrade ended)</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF1744;border:1px solid #999;margin-right:6px;"></span><span>⚠ Expires in &lt; 24 hours</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#EF5350;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 7 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF8F00;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 30 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#66BB6A;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 90 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#2E7D32;border:1px solid #999;margin-right:6px;"></span><span>Active &gt; 90 days</span></div>
+                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>Always active / permanent</span></div>
+                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
+                                    ⚡ Shows evolved/upgraded building activity.<br>
+                                    Hover a building to see exact end date.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /.section-content -->
+            </div>
+
+        </div>
+
+        <div class="canvas-container">
+            <div class="controls">
+                <label>Grid Size:</label>
+                <input type="number" id="gridWidth"  value="20" min="10" max="200" style="width:60px;">
+                <span>×</span>
+                <input type="number" id="gridHeight" value="20" min="10" max="200" style="width:60px;">
+                <button class="btn btn-small" id="resizeBtn">Resize</button>
+                <button class="btn btn-small" id="fitToContentBtn">Fit to Content</button>
+            </div>
+            <canvas id="cityCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="pool-panel" id="poolPanel">
+            <div class="pool-header">
+                <span>Building Pool</span>
+                <span class="pool-count" id="poolCount">0</span>
+            </div>
+            <div class="pool-hint">Drag buildings off the grid to store them here. Click to place back.</div>
+            <div class="pool-list" id="poolList"></div>
+        </div>
+
+        <div id="modeBanner" class="mode-banner hidden"></div>
+    </div>
+
+    <div id="buildingTooltip" class="building-tooltip" style="display:none;"></div>
+
+    <!-- Right-click context menu (canvas buildings) -->
+    <div id="ctxMenu" class="ctx-menu" style="display:none;">
+        <button class="ctx-item ctx-duplicate" id="ctxDuplicate">⧉ Duplicate &amp; drag</button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item ctx-stash"     id="ctxStash">📦 Stash to pool</button>
+        <button class="ctx-item ctx-delete"    id="ctxDelete">🗑 Delete</button>
+    </div>
+
+    <!-- Right-click context menu (pool items) -->
+    <div id="poolCtxMenu" class="ctx-menu" style="display:none;">
+        <button class="ctx-item ctx-duplicate" id="poolCtxDuplicate">⧉ Duplicate &amp; drag</button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item ctx-delete"    id="poolCtxRemove">🗑 Remove from pool</button>
+    </div>
+
+    <!-- Right-click context menu (building list sidebar) -->
+    <div id="listCtxMenu" class="ctx-menu" style="display:none;">
+        <div class="ctx-label" id="listCtxName"></div>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" id="listCtxAddToPool">📦 Add to pool</button>
+        <button class="ctx-item" id="listCtxPlace">🖱 Place on canvas</button>
+    </div>
+
+    <!-- Right-click context menu (empty expansion area) -->
+    <div id="expansionCtxMenu" class="ctx-menu" style="display:none;">
+        <button class="ctx-item ctx-delete" id="expansionCtxRemove">🗑 Remove expansion → pool</button>
+    </div>
+
+    <!-- FoE Helper Import Modal -->
+    <div class="modal" id="importFoeModal">
+        <div class="modal-content">
+            <h2>Import from FoE Helper</h2>
+            <div class="import-instructions">
+                <ol>
+                    <li>Open Forge of Empires with FoE Helper extension installed</li>
+                    <li>Go to <strong>Town Overview → City Planner</strong></li>
+                    <li>Click <strong>"Copy citymap data"</strong></li>
+                    <li>Click the button below</li>
+                </ol>
+            </div>
+            <div class="import-target-bar">
+                Importing into: <strong id="importTargetLabel">🏙️ Main City</strong>
+            </div>
+
+            <button class="btn success import-clipboard-btn" id="importClipboardBtn">
+                📋 Paste from Clipboard
+            </button>
+            <div id="clipboardStatus" class="clipboard-status" style="display:none;"></div>
+
+            <details class="import-manual-fallback">
+                <summary>Paste manually instead</summary>
+                <textarea id="foeImportText" placeholder="Paste your FoE Helper JSON data here..."></textarea>
+            </details>
+
+            <div id="cityDetectionArea" style="display:none;">
+                <div class="detect-title">Cities detected in this export — select which to import:</div>
+                <div id="cityCheckboxes"></div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeFoeImportBtn">Cancel</button>
+                <button class="btn success" id="importFoeConfirmBtn" disabled>Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Building Modal -->
+    <div class="modal" id="addBuildingModal">
+        <div class="modal-content">
+            <h2>Add Custom Building</h2>
+            <form id="addBuildingForm">
+                <label>Name: <input type="text" name="name" required></label><br><br>
+                <label>Width: <input type="number" name="width" min="1" max="10" value="2" required></label><br><br>
+                <label>Height: <input type="number" name="height" min="1" max="10" value="2" required></label><br><br>
+                <label>Age: <input type="text" name="age" placeholder="e.g., Stone Age, Bronze Age"></label><br><br>
+                <label>Type:
+                    <select name="type">
+                        <option value="residential">Residential</option>
+                        <option value="production">Production</option>
+                        <option value="goods">Goods</option>
+                        <option value="culture">Culture</option>
+                        <option value="military">Military</option>
+                        <option value="great">Great Building</option>
+                    </select>
+                </label><br><br>
+                <label>Color: <input type="color" name="color" value="#FFB6C1"></label><br><br>
+                <div class="modal-buttons">
+                    <button type="button" class="btn tool" id="cancelAddBtn">Cancel</button>
+                    <button type="submit" class="btn">Add Building</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Save/Load Modal -->
+    <div class="modal" id="saveLoadModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Save Layout</h2>
+            <p id="modalInstructions">Copy this JSON to save your layout:</p>
+            <textarea id="saveLoadText"></textarea>
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeModalBtn">Close</button>
+                <button class="btn" id="copyBtn" style="display:none;">Copy to Clipboard</button>
+                <button class="btn" id="loadConfirmBtn" style="display:none;">Load</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Layout Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <h2>🔗 Share Layout</h2>
+            <p>Anyone with this link can view and edit a copy of your current layout:</p>
+            <textarea id="shareUrlText" readonly style="font-size:12px;word-break:break-all;"></textarea>
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeShareModalBtn">Close</button>
+                <button class="btn" id="copyShareUrlBtn">Copy Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Efficiency Rating Import Result Modal -->
+    <div class="modal" id="efficiencyImportModal">
+        <div class="modal-content">
+            <h2>📋 Efficiency Rating Import</h2>
+            <div id="efficiencyImportBody"></div>
+            <div class="modal-buttons">
+                <button class="btn tool" id="closeEfficiencyImportBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Overview Modal -->
+    <div class="modal" id="prodOverviewModal">
+        <div class="modal-content prod-overview-modal">
+            <div class="prod-overview-header">
+                <h2>📊 Production Overview</h2>
+                <button class="btn tool btn-small" id="closeProdOverviewBtn">✕ Close</button>
+            </div>
+            <div id="prodOverviewBody"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="bundle.js"></script>
+</body>
+</html>
