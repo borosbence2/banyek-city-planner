@@ -104,6 +104,11 @@ export class CityPlanner {
         this.resizeCanvas();
         this.updateCityTabs();
         this._loadFromUrlHash();
+
+        if (!localStorage.getItem('foe_visited')) {
+            localStorage.setItem('foe_visited', '1');
+            this.showModal('helpModal');
+        }
     }
 
     // ========================================

@@ -81,6 +81,31 @@ export class Renderer {
 
         ctx.restore();
         if (this.p.showMinimap) this.drawMinimap();
+        this._drawEmptyState();
+    }
+
+    _drawEmptyState() {
+        const { ctx, canvas, buildings, roads } = this.p;
+        const onlyTownhall = buildings.length <= 1 && roads.size === 0;
+        if (!onlyTownhall) return;
+
+        const dark = this.isDark;
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2 + 60;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.font = 'bold 15px system-ui, sans-serif';
+        ctx.fillStyle = dark ? 'rgba(160,160,200,0.85)' : 'rgba(80,80,120,0.75)';
+        ctx.fillText('Import your city to get started', cx, cy);
+
+        ctx.font = '13px system-ui, sans-serif';
+        ctx.fillStyle = dark ? 'rgba(120,120,160,0.65)' : 'rgba(120,120,160,0.65)';
+        ctx.fillText('or place buildings and roads manually using the sidebar', cx, cy + 22);
+
+        ctx.restore();
     }
 
     /** Returns the minimap rectangle in canvas pixel space, clamped to fit the canvas. */
