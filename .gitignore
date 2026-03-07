@@ -2,6 +2,10 @@
 *.json
 !package.json
 
+# Build output & dependencies
+node_modules/
+dist/
+
 # Python cache
 tools/__pycache__/
 *.pyc
