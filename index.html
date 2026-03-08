@@ -14,47 +14,48 @@
     <meta name="twitter:title" content="Banyek FoE City Planner">
     <meta name="twitter:description" content="City planning tool for Forge of Empires — import your city from FoE Helper, plan layouts, optimize building placement, and export to PNG or PDF.">
     <link rel="icon" type="image/png" href="assets/rang.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <div id="cityTabBar">
-            <button id="menuToggleBtn" class="city-tab menu-toggle-btn" title="Toggle sidebar" style="display:none;">☰</button>
-            <button id="poolToggleBtn" class="city-tab pool-toggle-btn" title="Toggle building pool" style="display:none;">📦</button>
-            <button class="city-tab active" data-city="main">🏙️ Main City</button>
-            <button class="city-tab" data-city="settlement">🏛️ Settlement</button>
-            <button class="city-tab" data-city="colony">🚀 Colony</button>
-            <button class="city-tab" data-city="quantum">⚡ Quantum</button>
+            <button id="menuToggleBtn" class="city-tab menu-toggle-btn" data-i18n-title="sidebar.menuToggle" style="display:none;">☰</button>
+            <button id="poolToggleBtn" class="city-tab pool-toggle-btn" data-i18n-title="sidebar.poolToggle" style="display:none;">📦</button>
+            <button class="city-tab active" data-city="main"       data-i18n="tab.mainCity">🏙️ Main City</button>
+            <button class="city-tab"        data-city="settlement" data-i18n="tab.settlement">🏛️ Settlement</button>
+            <button class="city-tab"        data-city="colony"     data-i18n="tab.colony">🚀 Colony</button>
+            <button class="city-tab"        data-city="quantum"    data-i18n="tab.quantum">⚡ Quantum</button>
         </div>
 
         <div class="sidebar mobile-open" id="sidebar" data-city-type="main">
             <div class="sidebar-header">
-                <span class="sidebar-title">🏰 Banyek City Planner</span>
-                <div style="display:flex;gap:4px;">
-                    <button class="btn-icon" id="helpBtn" title="How to use">❓</button>
-                    <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+                <span class="sidebar-title" data-i18n="sidebar.title">🏰 Banyek City Planner</span>
+                <div style="display:flex;gap:4px;align-items:center;">
+                    <div id="langPickerContainer" style="display:flex;gap:2px;"></div>
+                    <button class="btn-icon" id="helpBtn" data-i18n-title="sidebar.helpTitle">❓</button>
+                    <button class="btn-icon" id="darkModeBtn" data-i18n-title="sidebar.darkMode">🌙</button>
                 </div>
             </div>
 
-            <div class="status" id="status">Mode: Select</div>
+            <div class="status" id="status" data-i18n="status.select">Mode: Select</div>
 
             <div class="city-info" id="cityInfo" style="display:none;">
-                <strong>Imported City Info:</strong><br>
+                <strong data-i18n="sidebar.importedCity">Imported City Info:</strong><br>
                 <span id="cityInfoText"></span>
             </div>
-
-            <!-- Production overview — promoted to always visible -->
-            <button class="btn prod-btn" id="prodOverviewBtn">📊 Production Overview</button>
 
             <!-- Import — always visible -->
             <input type="file" id="efficiencyFileInput" accept=".json" style="display:none;">
             <div class="import-group">
-                <div class="import-group-label">📥 Import</div>
-                <button class="btn success import-main-btn" id="importFoeBtn">Import from FoE Helper</button>
+                <div class="import-group-label" data-i18n="sidebar.importLabel">📥 Import</div>
+                <button class="btn success import-main-btn" id="importFoeBtn" data-i18n="sidebar.importFoeBtn">Import from FoE Helper</button>
                 <div class="efficiency-row">
-                    <button class="btn" id="importEfficiencyBtn">📋 Efficiency Rating</button>
-                    <label class="efficiency-tile-check" title="Check if exported with 'Value/tile' enabled">
-                        <input type="checkbox" id="efficiencyPerTile" checked> per-tile
+                    <button class="btn" id="importEfficiencyBtn" data-i18n="sidebar.efficiencyBtn">📋 Efficiency Rating</button>
+                    <label class="efficiency-tile-check" data-i18n-title="sidebar.perTileTitle">
+                        <input type="checkbox" id="efficiencyPerTile" checked> <span data-i18n="sidebar.perTile">per-tile</span>
                     </label>
                 </div>
             </div>
@@ -62,24 +63,24 @@
             <!-- Save / Export — collapsed by default -->
             <div class="section collapsible-section">
                 <h2 class="section-header collapsed" data-toggle="fileContent">
-                    💾 Save / Export <span class="section-arrow">▼</span>
+                    <span data-i18n="sidebar.saveExport">💾 Save / Export</span> <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content collapsed" id="fileContent">
                     <div class="file-btn-grid">
-                        <button class="btn" id="saveBtn">💾 Save</button>
-                        <button class="btn" id="loadBtn">📂 Load</button>
-                        <button class="btn tool" id="exportPngBtn">🖼 PNG</button>
-                        <button class="btn tool" id="exportPdfBtn">📄 PDF</button>
-                        <button class="btn" id="shareBtn" style="grid-column: span 2;">🔗 Share Layout</button>
+                        <button class="btn" id="saveBtn"       data-i18n="sidebar.saveBtn">💾 Save</button>
+                        <button class="btn" id="loadBtn"       data-i18n="sidebar.loadBtn">📂 Load</button>
+                        <button class="btn tool" id="exportPngBtn" data-i18n="sidebar.pngBtn">🖼 PNG</button>
+                        <button class="btn tool" id="exportPdfBtn" data-i18n="sidebar.pdfBtn">📄 PDF</button>
+                        <button class="btn" id="shareBtn" style="grid-column: span 2;" data-i18n="sidebar.shareBtn">🔗 Share Layout</button>
                     </div>
-                    <button class="btn danger" id="clearBtn">🗑 Clear All</button>
+                    <button class="btn danger" id="clearBtn" data-i18n="sidebar.clearBtn">🗑 Clear All</button>
                 </div><!-- /.section-content -->
             </div>
 
             <!-- Settlement type picker — visible only when settlement tab is active -->
             <div id="settlementTypeSection" class="section">
                 <h2 class="section-header" data-toggle="settlementTypeContent">
-                    🏛️ Settlement Type <span class="section-arrow">▼</span>
+                    <span data-i18n="sidebar.settlementType">🏛️ Settlement Type</span> <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content" id="settlementTypeContent">
                     <div class="settlement-type-grid" id="settlementTypeGrid">
@@ -92,7 +93,7 @@
             <!-- Colony type picker — visible only when colony tab is active -->
             <div id="colonyTypeSection" class="section">
                 <h2 class="section-header" data-toggle="colonyTypeContent">
-                    🚀 Colony Type <span class="section-arrow">▼</span>
+                    <span data-i18n="sidebar.colonyType">🚀 Colony Type</span> <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content" id="colonyTypeContent">
                     <div class="settlement-type-grid" id="colonyTypeGrid">
@@ -103,28 +104,28 @@
             </div>
 
             <div id="buildingSection" class="section collapsible-section">
-                <h2 class="section-header" data-toggle="buildingContent">🏗️ Build <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header" data-toggle="buildingContent"><span data-i18n="sidebar.build">🏗️ Build</span> <span class="section-arrow">▼</span></h2>
                 <div class="section-content" id="buildingContent">
                     <!-- Placement tools — always visible -->
                     <div class="tools-bar">
-                        <button class="tool-btn" id="roadBtn" title="Paint 1×1 roads">+ Road</button>
-                        <button class="tool-btn" id="wideRoadBtn" title="Paint 2×2 wide roads">+ Wide Road</button>
-<button class="tool-btn" id="addExpansionBtn" title="Place 4×4 expansion">+ Expansion</button>
-                        <button class="tool-btn" id="addBuildingBtn" title="Add a custom building">+ Custom Building</button>
+                        <button class="tool-btn" id="roadBtn"         data-i18n="sidebar.roadBtn"       data-i18n-title="sidebar.roadBtnTitle">+ Road</button>
+                        <button class="tool-btn" id="wideRoadBtn"     data-i18n="sidebar.wideRoadBtn"   data-i18n-title="sidebar.wideRoadTitle">+ Wide Road</button>
+                        <button class="tool-btn" id="addExpansionBtn" data-i18n="sidebar.expansionBtn"  data-i18n-title="sidebar.expansionTitle">+ Expansion</button>
+                        <button class="tool-btn" id="addBuildingBtn"  data-i18n="sidebar.customBtn"     data-i18n-title="sidebar.customTitle">+ Custom Building</button>
                     </div>
                     <!-- Buildings sub-section (collapsed by default) -->
-                    <div class="section-header collapsed" data-toggle="buildingListContent">🏗 Buildings <span class="section-arrow">▼</span></div>
+                    <div class="section-header collapsed" data-toggle="buildingListContent"><span data-i18n="sidebar.buildings">🏗 Buildings</span> <span class="section-arrow">▼</span></div>
                     <div class="section-content collapsed" id="buildingListContent">
-                        <input type="text" class="search-box" id="searchBox" placeholder="Search buildings...">
+                        <input type="text" class="search-box" id="searchBox" data-i18n-placeholder="sidebar.searchPlaceholder" placeholder="Search buildings...">
                         <div class="type-filter-grid">
-                            <button class="type-btn active" data-tab="all">All</button>
-                            <button class="type-btn" data-tab="residential">🏘<br>Res</button>
-                            <button class="type-btn" data-tab="production">🏭<br>Prod</button>
-                            <button class="type-btn" data-tab="goods">📦<br>Goods</button>
-                            <button class="type-btn" data-tab="culture">🎭<br>Cult</button>
-                            <button class="type-btn" data-tab="military">⚔<br>Mil</button>
-                            <button class="type-btn" data-tab="great">🏛<br>GB</button>
-                            <button class="type-btn" data-tab="event">✨<br>Event</button>
+                            <button class="type-btn active" data-tab="all"         data-i18n-html="type.all">All</button>
+                            <button class="type-btn"        data-tab="residential" data-i18n-html="type.residential">🏘<br>Res</button>
+                            <button class="type-btn"        data-tab="production"  data-i18n-html="type.production">🏭<br>Prod</button>
+                            <button class="type-btn"        data-tab="goods"       data-i18n-html="type.goods">📦<br>Goods</button>
+                            <button class="type-btn"        data-tab="culture"     data-i18n-html="type.culture">🎭<br>Cult</button>
+                            <button class="type-btn"        data-tab="military"    data-i18n-html="type.military">⚔<br>Mil</button>
+                            <button class="type-btn"        data-tab="great"       data-i18n-html="type.great">🏛<br>GB</button>
+                            <button class="type-btn"        data-tab="event"       data-i18n-html="type.event">✨<br>Event</button>
                         </div>
                         <div class="building-list" id="buildingList"></div>
                     </div><!-- /.buildingListContent -->
@@ -133,79 +134,43 @@
 
             <div class="section collapsible-section">
                 <h2 class="section-header collapsed" data-toggle="optimizeContent">
-                    ⚡ Optimize <span class="section-arrow">▼</span>
+                    <span data-i18n="sidebar.optimize">⚡ Optimize</span> <span class="section-arrow">▼</span>
                 </h2>
                 <div class="section-content collapsed" id="optimizeContent">
                     <button class="btn warning" id="optimizeBtn" disabled>
-                        ⚡ Optimize Layout <span class="coming-soon-badge">Coming Soon</span>
+                        <span data-i18n="sidebar.optimizeBtn">⚡ Optimize Layout</span> <span class="coming-soon-badge" data-i18n="sidebar.comingSoon">Coming Soon</span>
                     </button>
-                    <button class="btn tool" id="undoOptimizeBtn" style="display:none;">
+                    <button class="btn tool" id="undoOptimizeBtn" style="display:none;" data-i18n="sidebar.undoOptimize">
                         ↩️ Undo Optimization
                     </button>
                     <div class="progress-container" id="progressContainer">
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill"></div>
                         </div>
-                        <div class="progress-text" id="progressText">Initializing...</div>
+                        <div class="progress-text" id="progressText" data-i18n="sidebar.initializing">Initializing...</div>
                     </div>
                 </div><!-- /.section-content -->
             </div>
 
+            <button class="btn prod-btn" id="prodOverviewBtn" data-i18n="sidebar.prodOverview">📊 Production Overview</button>
+
             <!-- Map Mode — own collapsible section -->
             <div class="section collapsible-section">
-                <h2 class="section-header" data-toggle="mapModeContent">🗺️ Map Mode <span class="section-arrow">▼</span></h2>
+                <h2 class="section-header" data-toggle="mapModeContent"><span data-i18n="sidebar.mapMode">🗺️ Map Mode</span> <span class="section-arrow">▼</span></h2>
                 <div class="section-content" id="mapModeContent">
                     <div id="mapModeSection">
                         <div style="display:flex;gap:4px;margin-bottom:10px;">
-                            <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;">Normal</button>
-                            <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;">⚡ Activity</button>
-                            <button class="btn btn-small render-mode-btn" data-mode="roads" style="flex:1;">🔗 Road Connectivity</button>
+                            <button class="btn btn-small render-mode-btn active" data-mode="normal" style="flex:1;" data-i18n="mapMode.normal">Normal</button>
+                            <button class="btn btn-small render-mode-btn" data-mode="expiry" style="flex:1;" data-i18n="mapMode.expiry">⚡ Activity</button>
+                            <button class="btn btn-small render-mode-btn" data-mode="roads"  style="flex:1;" data-i18n="mapMode.roads">🔗 Road Connectivity</button>
                         </div>
                     </div>
                     <h3 class="section-header legend-toggle" data-toggle="colorLegendContent">
-                        🎨 Color Legend <span class="section-arrow">▼</span>
+                        <span data-i18n="sidebar.colorLegend">🎨 Color Legend</span> <span class="section-arrow">▼</span>
                     </h3>
                     <div id="colorLegendContent" class="section-content">
-                        <div id="colorLegend" data-mode="normal" style="font-size:10px;line-height:1.6;">
-                            <div class="legend-normal">
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#87CEEB;border:1px solid #999;margin-right:6px;"></span><span>Residential 🏘️</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#5F8DC3;border:1px solid #999;margin-right:6px;"></span><span>Production 🏭</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#F4E16B;border:1px solid #999;margin-right:6px;"></span><span>Goods 📦</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6B8E7F;border:1px solid #999;margin-right:6px;"></span><span>Culture / Decorations 🎭</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#8B7BAA;border:1px solid #999;margin-right:6px;"></span><span>Military ⚔️</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D46A4F;border:1px solid #999;margin-right:6px;"></span><span>Great Buildings 🏛️</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E8D679;border:1px solid #999;margin-right:6px;"></span><span>Town Hall 🏛️</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#D4884B;border:1px solid #999;margin-right:6px;"></span><span>Event Buildings ✨</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#808080;border:1px solid #999;margin-right:6px;"></span><span>Roads 🛣️</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#6b6b6b;border:1px solid #999;margin-right:6px;"></span><span>Wide Roads (2×2) 🛤️</span></div>
-                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
-                                    💡 Colors match FoE Helper<br>
-                                    ✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.
-                                </div>
-                            </div>
-                            <div class="legend-roads">
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#43A047;border:1px solid #999;margin-right:6px;"></span><span>Connected to Town Hall</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#E53935;border:1px solid #999;margin-right:6px;"></span><span>Not connected to Town Hall</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>No road required</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#26C6DA;border:1px solid #999;margin-right:6px;"></span><span>Road / Wide Road</span></div>
-                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
-                                    Buildings must be adjacent to a road that links back to the Town Hall.
-                                </div>
-                            </div>
-                            <div class="legend-expiry">
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#37474F;border:1px solid #999;margin-right:6px;"></span><span>Inactive (upgrade ended)</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF1744;border:1px solid #999;margin-right:6px;"></span><span>⚠ Expires in &lt; 24 hours</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#EF5350;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 7 days</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#FF8F00;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 30 days</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#66BB6A;border:1px solid #999;margin-right:6px;"></span><span>Expires in &lt; 90 days</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#2E7D32;border:1px solid #999;margin-right:6px;"></span><span>Active &gt; 90 days</span></div>
-                                <div style="display:flex;align-items:center;margin:4px 0;"><span style="display:inline-block;width:16px;height:16px;background:#78909C;border:1px solid #999;margin-right:6px;"></span><span>Always active / permanent</span></div>
-                                <div style="margin-top:8px;padding:6px;background:#f9f9f9;border-radius:4px;font-style:italic;color:#666;font-size:9px;">
-                                    ⚡ Shows evolved/upgraded building activity.<br>
-                                    Hover a building to see exact end date.
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Legend body is generated by JS (renderColorLegend) for i18n support -->
+                        <div id="colorLegend" data-mode="normal" style="font-size:10px;line-height:1.6;"></div>
                     </div>
                 </div><!-- /.section-content -->
             </div>
@@ -215,29 +180,29 @@
 
         <div class="canvas-container">
             <div class="controls">
-                <label>Grid Size:</label>
+                <label data-i18n="controls.gridSize">Grid Size:</label>
                 <input type="number" id="gridWidth"  value="20" min="10" max="200" style="width:60px;">
                 <span>×</span>
                 <input type="number" id="gridHeight" value="20" min="10" max="200" style="width:60px;">
-                <button class="btn btn-small" id="resizeBtn">Resize</button>
-                <button class="btn btn-small" id="fitToContentBtn">Fit to Content</button>
+                <button class="btn btn-small" id="resizeBtn"      data-i18n="controls.resize">Resize</button>
+                <button class="btn btn-small" id="fitToContentBtn" data-i18n="controls.fitToContent">Fit to Content</button>
                 <div class="controls-separator"></div>
-                <button class="btn btn-small" id="zoomInBtn">+ Zoom</button>
-                <button class="btn btn-small" id="zoomOutBtn">− Zoom</button>
-                <button class="btn btn-small" id="resetViewBtn">⌂ Reset</button>
+                <button class="btn btn-small" id="zoomInBtn"      data-i18n="controls.zoomIn">+ Zoom</button>
+                <button class="btn btn-small" id="zoomOutBtn"     data-i18n="controls.zoomOut">− Zoom</button>
+                <button class="btn btn-small" id="resetViewBtn"   data-i18n="controls.resetView">⌂ Reset</button>
                 <div class="controls-separator"></div>
-                <button class="btn btn-small" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8634; Undo</button>
-                <button class="btn btn-small" id="redoBtn" title="Redo (Ctrl+Y)" disabled>&#8635; Redo</button>
+                <button class="btn btn-small" id="undoBtn" data-i18n="controls.undo" data-i18n-title="controls.undoTitle" disabled>&#8634; Undo</button>
+                <button class="btn btn-small" id="redoBtn" data-i18n="controls.redo" data-i18n-title="controls.redoTitle" disabled>&#8635; Redo</button>
             </div>
             <canvas id="cityCanvas" width="600" height="600"></canvas>
         </div>
 
         <div class="pool-panel" id="poolPanel">
             <div class="pool-header">
-                <span>Building Pool</span>
+                <span data-i18n="pool.header">Building Pool</span>
                 <span class="pool-count" id="poolCount">0</span>
             </div>
-            <div class="pool-hint">Drag buildings off the grid to store them here. Click to place back.</div>
+            <div class="pool-hint" data-i18n="pool.hint">Drag buildings off the grid to store them here. Click to place back.</div>
             <div class="pool-list" id="poolList"></div>
         </div>
 
@@ -248,65 +213,65 @@
 
     <!-- Right-click context menu (canvas buildings) -->
     <div id="ctxMenu" class="ctx-menu" style="display:none;">
-        <button class="ctx-item ctx-duplicate" id="ctxDuplicate">⧉ Duplicate &amp; drag</button>
+        <button class="ctx-item ctx-duplicate" id="ctxDuplicate"    data-i18n="ctx.duplicate">⧉ Duplicate &amp; drag</button>
         <div class="ctx-divider"></div>
-        <button class="ctx-item ctx-stash"     id="ctxStash">📦 Stash to pool</button>
-        <button class="ctx-item ctx-delete"    id="ctxDelete">🗑 Delete</button>
+        <button class="ctx-item ctx-stash"     id="ctxStash"        data-i18n="ctx.stash">📦 Stash to pool</button>
+        <button class="ctx-item ctx-delete"    id="ctxDelete"       data-i18n="ctx.delete">🗑 Delete</button>
     </div>
 
     <!-- Right-click context menu (pool items) -->
     <div id="poolCtxMenu" class="ctx-menu" style="display:none;">
-        <button class="ctx-item ctx-duplicate" id="poolCtxDuplicate">⧉ Duplicate &amp; drag</button>
+        <button class="ctx-item ctx-duplicate" id="poolCtxDuplicate" data-i18n="ctx.duplicate">⧉ Duplicate &amp; drag</button>
         <div class="ctx-divider"></div>
-        <button class="ctx-item ctx-delete"    id="poolCtxRemove">🗑 Remove from pool</button>
+        <button class="ctx-item ctx-delete"    id="poolCtxRemove"    data-i18n="ctx.removeFromPool">🗑 Remove from pool</button>
     </div>
 
     <!-- Right-click context menu (building list sidebar) -->
     <div id="listCtxMenu" class="ctx-menu" style="display:none;">
         <div class="ctx-label" id="listCtxName"></div>
         <div class="ctx-divider"></div>
-        <button class="ctx-item" id="listCtxAddToPool">📦 Add to pool</button>
-        <button class="ctx-item" id="listCtxPlace">🖱 Place on canvas</button>
+        <button class="ctx-item" id="listCtxAddToPool" data-i18n="ctx.addToPool">📦 Add to pool</button>
+        <button class="ctx-item" id="listCtxPlace"     data-i18n="ctx.placeOnCanvas">🖱 Place on canvas</button>
     </div>
 
     <!-- Right-click context menu (empty expansion area) -->
     <div id="expansionCtxMenu" class="ctx-menu" style="display:none;">
-        <button class="ctx-item ctx-delete" id="expansionCtxRemove">🗑 Remove expansion → pool</button>
+        <button class="ctx-item ctx-delete" id="expansionCtxRemove" data-i18n="ctx.removeExpansion">🗑 Remove expansion → pool</button>
     </div>
 
     <!-- FoE Helper Import Modal -->
     <div class="modal" id="importFoeModal">
         <div class="modal-content">
-            <h2>Import from FoE Helper</h2>
+            <h2 data-i18n="importModal.title">Import from FoE Helper</h2>
             <div class="import-instructions">
                 <ol>
-                    <li>Open Forge of Empires with FoE Helper extension installed</li>
-                    <li>Go to <strong>Town Overview → City Planner</strong></li>
-                    <li>Click <strong>"Copy citymap data"</strong></li>
-                    <li>Click the button below</li>
+                    <li data-i18n-html="importModal.step1">Open Forge of Empires with FoE Helper extension installed</li>
+                    <li data-i18n-html="importModal.step2">Go to <strong>Town Overview → City Planner</strong></li>
+                    <li data-i18n-html="importModal.step3">Click <strong>"Copy citymap data"</strong></li>
+                    <li data-i18n="importModal.step4">Click the button below</li>
                 </ol>
             </div>
             <div class="import-target-bar">
-                Importing into: <strong id="importTargetLabel">🏙️ Main City</strong>
+                <span data-i18n="importModal.importingInto">Importing into:</span> <strong id="importTargetLabel">🏙️ Main City</strong>
             </div>
 
-            <button class="btn success import-clipboard-btn" id="importClipboardBtn">
+            <button class="btn success import-clipboard-btn" id="importClipboardBtn" data-i18n="importModal.pasteClipboard">
                 📋 Paste from Clipboard
             </button>
             <div id="clipboardStatus" class="clipboard-status" style="display:none;"></div>
 
             <details class="import-manual-fallback">
-                <summary>Paste manually instead</summary>
-                <textarea id="foeImportText" placeholder="Paste your FoE Helper JSON data here..."></textarea>
+                <summary data-i18n="importModal.pasteManually">Paste manually instead</summary>
+                <textarea id="foeImportText" data-i18n-placeholder="importModal.pasteArea" placeholder="Paste your FoE Helper JSON data here..."></textarea>
             </details>
 
             <div id="cityDetectionArea" style="display:none;">
-                <div class="detect-title">Cities detected in this export — select which to import:</div>
+                <div class="detect-title" data-i18n="importModal.detectTitle">Cities detected in this export — select which to import:</div>
                 <div id="cityCheckboxes"></div>
             </div>
             <div class="modal-buttons">
-                <button class="btn tool" id="closeFoeImportBtn">Cancel</button>
-                <button class="btn success" id="importFoeConfirmBtn" disabled>Import</button>
+                <button class="btn tool" id="closeFoeImportBtn"    data-i18n="importModal.cancel">Cancel</button>
+                <button class="btn success" id="importFoeConfirmBtn" data-i18n="importModal.import" disabled>Import</button>
             </div>
         </div>
     </div>
@@ -314,26 +279,26 @@
     <!-- Add Building Modal -->
     <div class="modal" id="addBuildingModal">
         <div class="modal-content">
-            <h2>Add Custom Building</h2>
+            <h2 data-i18n="addModal.title">Add Custom Building</h2>
             <form id="addBuildingForm">
-                <label>Name: <input type="text" name="name" required></label><br><br>
-                <label>Width: <input type="number" name="width" min="1" max="10" value="2" required></label><br><br>
-                <label>Height: <input type="number" name="height" min="1" max="10" value="2" required></label><br><br>
-                <label>Age: <input type="text" name="age" placeholder="e.g., Stone Age, Bronze Age"></label><br><br>
-                <label>Type:
+                <label><span data-i18n="addModal.name">Name:</span> <input type="text" name="name" required></label><br><br>
+                <label><span data-i18n="addModal.width">Width:</span> <input type="number" name="width" min="1" max="10" value="2" required></label><br><br>
+                <label><span data-i18n="addModal.height">Height:</span> <input type="number" name="height" min="1" max="10" value="2" required></label><br><br>
+                <label><span data-i18n="addModal.age">Age:</span> <input type="text" name="age" data-i18n-placeholder="addModal.agePlaceholder" placeholder="e.g., Stone Age, Bronze Age"></label><br><br>
+                <label><span data-i18n="addModal.type">Type:</span>
                     <select name="type">
-                        <option value="residential">Residential</option>
-                        <option value="production">Production</option>
-                        <option value="goods">Goods</option>
-                        <option value="culture">Culture</option>
-                        <option value="military">Military</option>
-                        <option value="great">Great Building</option>
+                        <option value="residential" data-i18n="addModal.residential">Residential</option>
+                        <option value="production"  data-i18n="addModal.production">Production</option>
+                        <option value="goods"       data-i18n="addModal.goods">Goods</option>
+                        <option value="culture"     data-i18n="addModal.culture">Culture</option>
+                        <option value="military"    data-i18n="addModal.military">Military</option>
+                        <option value="great"       data-i18n="addModal.great">Great Building</option>
                     </select>
                 </label><br><br>
-                <label>Color: <input type="color" name="color" value="#FFB6C1"></label><br><br>
+                <label><span data-i18n="addModal.color">Color:</span> <input type="color" name="color" value="#FFB6C1"></label><br><br>
                 <div class="modal-buttons">
-                    <button type="button" class="btn tool" id="cancelAddBtn">Cancel</button>
-                    <button type="submit" class="btn">Add Building</button>
+                    <button type="button" class="btn tool" id="cancelAddBtn" data-i18n="addModal.cancel">Cancel</button>
+                    <button type="submit" class="btn" data-i18n="addModal.add">Add Building</button>
                 </div>
             </form>
         </div>
@@ -342,13 +307,13 @@
     <!-- Save/Load Modal -->
     <div class="modal" id="saveLoadModal">
         <div class="modal-content">
-            <h2 id="modalTitle">Save Layout</h2>
-            <p id="modalInstructions">Copy this JSON to save your layout:</p>
+            <h2 id="modalTitle" data-i18n="saveModal.title">Save Layout</h2>
+            <p id="modalInstructions" data-i18n="saveModal.instructions">Copy this JSON to save your layout:</p>
             <textarea id="saveLoadText"></textarea>
             <div class="modal-buttons">
-                <button class="btn tool" id="closeModalBtn">Close</button>
-                <button class="btn" id="copyBtn" style="display:none;">Copy to Clipboard</button>
-                <button class="btn" id="loadConfirmBtn" style="display:none;">Load</button>
+                <button class="btn tool" id="closeModalBtn"    data-i18n="saveModal.close">Close</button>
+                <button class="btn" id="copyBtn"       style="display:none;" data-i18n="saveModal.copy">Copy to Clipboard</button>
+                <button class="btn" id="loadConfirmBtn" style="display:none;" data-i18n="saveModal.load">Load</button>
             </div>
         </div>
     </div>
@@ -356,12 +321,12 @@
     <!-- Share Layout Modal -->
     <div class="modal" id="shareModal">
         <div class="modal-content">
-            <h2>🔗 Share Layout</h2>
-            <p>Anyone with this link can view and edit a copy of your current layout:</p>
+            <h2 data-i18n="shareModal.title">🔗 Share Layout</h2>
+            <p data-i18n="shareModal.description">Anyone with this link can view and edit a copy of your current layout:</p>
             <textarea id="shareUrlText" readonly style="font-size:12px;word-break:break-all;"></textarea>
             <div class="modal-buttons">
-                <button class="btn tool" id="closeShareModalBtn">Close</button>
-                <button class="btn" id="copyShareUrlBtn">Copy Link</button>
+                <button class="btn tool" id="closeShareModalBtn" data-i18n="shareModal.close">Close</button>
+                <button class="btn" id="copyShareUrlBtn"         data-i18n="shareModal.copyLink">Copy Link</button>
             </div>
         </div>
     </div>
@@ -369,10 +334,10 @@
     <!-- Efficiency Rating Import Result Modal -->
     <div class="modal" id="efficiencyImportModal">
         <div class="modal-content">
-            <h2>📋 Efficiency Rating Import</h2>
+            <h2 data-i18n="effModal.title">📋 Efficiency Rating Import</h2>
             <div id="efficiencyImportBody"></div>
             <div class="modal-buttons">
-                <button class="btn tool" id="closeEfficiencyImportBtn">Close</button>
+                <button class="btn tool" id="closeEfficiencyImportBtn" data-i18n="effModal.close">Close</button>
             </div>
         </div>
     </div>
@@ -381,8 +346,8 @@
     <div class="modal" id="prodOverviewModal">
         <div class="modal-content prod-overview-modal">
             <div class="prod-overview-header">
-                <h2>📊 Production Overview</h2>
-                <button class="btn tool btn-small" id="closeProdOverviewBtn">✕ Close</button>
+                <h2 data-i18n="prodModal.title">📊 Production Overview</h2>
+                <button class="btn tool btn-small" id="closeProdOverviewBtn" data-i18n="prodModal.close">✕ Close</button>
             </div>
             <div id="prodOverviewBody"></div>
         </div>
@@ -391,92 +356,12 @@
     <!-- Help / About Modal -->
     <div class="modal" id="helpModal">
         <div class="modal-content help-modal-content">
-            <h2>❓ How to Use</h2>
-
-            <div class="help-quickstart">
-                <div class="qs-step">
-                    <div class="qs-num">1</div>
-                    <div><strong>Import your city</strong><br>Click <em>Import from FoE Helper</em> and paste your citymap data</div>
-                </div>
-                <div class="qs-step">
-                    <div class="qs-num">2</div>
-                    <div><strong>Plan your layout</strong><br>Drag buildings, paint roads, run the optimizer</div>
-                </div>
-                <div class="qs-step">
-                    <div class="qs-num">3</div>
-                    <div><strong>Share</strong><br>Generate a link and paste it in Discord or guild chat</div>
-                </div>
+            <div class="help-header">
+                <span class="help-header-title" data-i18n="helpModal.headerTitle">How to Use</span>
+                <button class="btn-icon help-close-btn" id="closeHelpBtn">✕</button>
             </div>
-
-            <div class="help-section">
-                <h3>📥 Importing your city</h3>
-                <ol>
-                    <li>Install the <strong>FoE Helper</strong> browser extension.</li>
-                    <li>Open Forge of Empires and go to <strong>Town Overview → City Planner</strong>.</li>
-                    <li>Click <strong>"Copy citymap data"</strong> in FoE Helper.</li>
-                    <li>Click <strong>Import from FoE Helper</strong> in the sidebar, then paste.</li>
-                </ol>
-            </div>
-
-            <div class="help-section">
-                <h3>🏗️ Placing buildings</h3>
-                <ul>
-                    <li>Click a building in the list, then click on the canvas to place it.</li>
-                    <li>Right-click a placed building to duplicate, stash, or delete it.</li>
-                    <li>Drag a building off the canvas to send it to the <strong>Building Pool</strong>.</li>
-                </ul>
-            </div>
-
-            <div class="help-section">
-                <h3>⚡ Optimizer</h3>
-                <ul>
-                    <li>Automatically rearranges buildings to maximise road connectivity.</li>
-                    <li>Use <strong>Undo Optimization</strong> to revert if you don't like the result.</li>
-                </ul>
-            </div>
-
-            <div class="help-section">
-                <h3>🗺️ Tabs</h3>
-                <ul>
-                    <li><strong>Main City</strong> — your regular FoE city.</li>
-                    <li><strong>Settlement</strong> — cultural settlement (choose type in the sidebar).</li>
-                    <li><strong>Colony</strong> — space colony (choose type in the sidebar).</li>
-                    <li><strong>Quantum</strong> — Quantum Incursions city.</li>
-                </ul>
-            </div>
-
-            <div class="help-section">
-                <h3>💾 Save &amp; Share</h3>
-                <ul>
-                    <li><strong>Save</strong> exports a JSON you can paste back to reload your layout.</li>
-                    <li><strong>Share Layout</strong> generates a URL that encodes your entire layout — paste it anywhere to share.</li>
-                    <li><strong>PNG / PDF</strong> exports a snapshot of the canvas.</li>
-                </ul>
-            </div>
-
-            <div class="help-section">
-                <h3>⌨️ Keyboard Shortcuts</h3>
-                <table class="shortcuts-table">
-                    <tr><td><kbd>R</kbd></td><td>Road placement mode</td></tr>
-                    <tr><td><kbd>W</kbd></td><td>Wide road placement mode</td></tr>
-                    <tr><td><kbd>E</kbd></td><td>Place expansion</td></tr>
-                    <tr><td><kbd>Delete</kbd></td><td>Delete selected building / road</td></tr>
-                    <tr><td><kbd>Esc</kbd></td><td>Cancel current placement</td></tr>
-                    <tr><td><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></td><td>Nudge selected building by 1 cell</td></tr>
-                    <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Zoom in / out</td></tr>
-                    <tr><td><kbd>0</kbd></td><td>Reset view</td></tr>
-                    <tr><td><kbd>M</kbd></td><td>Toggle minimap</td></tr>
-                    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save layout</td></tr>
-                </table>
-            </div>
-
-            <div class="help-about">
-                <strong>About:</strong> Banyek FoE City Planner is a fan-made tool, not affiliated with InnoGames or FoE Helper.
-            </div>
-
-            <div class="modal-buttons">
-                <button class="btn tool" id="closeHelpBtn">Close</button>
-            </div>
+            <!-- Help body is generated by JS (renderHelpModal) for i18n support -->
+            <div class="help-body" id="helpBody"></div>
         </div>
     </div>
 
