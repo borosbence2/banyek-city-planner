@@ -25,7 +25,7 @@ export const HU = {
     'sidebar.clearBtn':      '🗑 Mindent töröl',
     'sidebar.settlementType':'🏛️ Település típusa',
     'sidebar.colonyType':    '🚀 Kolónia típusa',
-    'sidebar.build':         '🏗️ Épít',
+    'sidebar.build':         '🏗️ Építés',
     'sidebar.roadBtn':       '+ Út',
     'sidebar.roadBtnTitle':  '1×1-es utak építése',
     'sidebar.wideRoadBtn':   '+ Széles út',
