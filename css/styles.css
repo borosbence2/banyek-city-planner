@@ -88,16 +88,83 @@ body {
     border-color: #bbb;
 }
 
-.lang-btn {
-    font-size: 14px;
-    padding: 3px 6px;
-    opacity: 0.6;
+/* ── Language dropdown ───────────────────────────────────────────────────── */
+
+.lang-dropdown {
+    position: relative;
+    font-size: 12px;
 }
 
-.lang-btn.active {
-    opacity: 1;
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+.lang-trigger {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #444;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.lang-trigger:hover {
+    background: #f0f2f8;
+    border-color: #bbb;
+}
+
+.lang-caret {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-left: 2px;
+}
+
+.lang-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    min-width: 130px;
+    z-index: 9999;
+}
+
+.lang-menu.open {
+    display: block;
+}
+
+.lang-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #444;
+    transition: background 0.12s;
+}
+
+.lang-option:hover {
+    background: #f0f2f8;
+}
+
+.lang-option.active {
+    background: rgba(102, 126, 234, 0.12);
+    color: #3a4fd0;
+    font-weight: 600;
+}
+
+.lang-opt-flag {
+    font-size: 16px;
+    line-height: 1;
 }
 
 /* ── Collapsible sections ─────────────────────────────────────────────────── */
@@ -756,6 +823,13 @@ kbd {
     color: #999;
 }
 
+.help-forras {
+    padding: 4px 14px 10px;
+    font-size: 11px;
+    color: #bbb;
+    text-align: center;
+}
+
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
 
 body.dark .help-quickstart {
@@ -779,6 +853,7 @@ body.dark .shortcuts-table tr:nth-child(even) td { background: rgba(102,126,234,
 body.dark kbd { background: #2a2a3e; border-color: #4a4a62; color: #c0c0d8; box-shadow: none; }
 
 body.dark .help-about { border-top-color: #2e2e48; color: #606080; }
+body.dark .help-forras { color: #484868; }
 
 .mode-banner {
     position: absolute;
@@ -1748,9 +1823,34 @@ body.dark .btn-icon:hover {
     border-color: #5a5a78;
 }
 
-body.dark .lang-btn.active {
-    border-color: #7788ff;
-    background: rgba(119, 136, 255, 0.15);
+body.dark .lang-trigger {
+    background: #1e1e30;
+    border-color: #3a3a52;
+    color: #c0c0d8;
+}
+
+body.dark .lang-trigger:hover {
+    background: #2a2a40;
+    border-color: #5a5a78;
+}
+
+body.dark .lang-menu {
+    background: #1e1e30;
+    border-color: #3a3a52;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+body.dark .lang-option {
+    color: #c0c0d8;
+}
+
+body.dark .lang-option:hover {
+    background: #2a2a40;
+}
+
+body.dark .lang-option.active {
+    background: rgba(119, 136, 255, 0.18);
+    color: #9090ff;
 }
 
 body.dark .section h2,
