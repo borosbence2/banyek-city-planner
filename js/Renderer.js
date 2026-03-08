@@ -1,4 +1,5 @@
 import { CONSTANTS } from './constants.js';
+import { t } from './i18n.js';
 
 export class Renderer {
     constructor(planner) {
@@ -99,7 +100,7 @@ export class Renderer {
 
         ctx.font = '12px system-ui, sans-serif';
         ctx.fillStyle = dark ? 'rgba(140,140,190,0.7)' : 'rgba(100,100,150,0.75)';
-        ctx.fillText('Import your city or place buildings manually to get started', cx, cy);
+        ctx.fillText(t('canvas.getStarted'), cx, cy);
 
         ctx.restore();
     }

@@ -259,12 +259,20 @@ def get_production_stats(entity):
       components[era].staticResources  → population
       components[era].happiness        → provided / demanded
       components[era].production       → autoStart passive production options
-        options[].time + products[].playerResources.resources → resource amounts
+        options[].products[]:
+          type "resources"      → playerResources.resources → resource amounts
+          type "resources" + onlyWhenMotivated → same, added on top of base
+          type "random"         → nested products[], each: amount × dropChance (expected value)
+          type "genericReward" + onlyWhenMotivated →
+            resolved via components[era].lookup.rewards[reward.id]:
+              GenericChest.possible_rewards[0].reward.amount → units_<suffix>
 
     Stat keys:
       population, happiness, demandHappiness, money_24h (residential coins)
       <resource_key>_<timer_suffix>  e.g. supplies_8h, strategy_points_24h,
       medals_1h, all_goods_of_age_24h …
+      units_<timer_suffix>  e.g. units_24h  (from motivated genericReward chests)
+
     """
     # ── System A: entity_levels ───────────────────────────────────────────────
     entity_levels = entity.get('entity_levels', []) or []
@@ -315,16 +323,44 @@ def get_production_stats(entity):
 
             # Passive (autoStart) production options
             prod_block = era_data.get('production') or {}
+            lookup_rewards = (era_data.get('lookup') or {}).get('rewards') or {}
             if prod_block.get('autoStart'):
                 timer = prod_block.get('time') or 0
                 for opt in prod_block.get('options') or []:
                     opt_timer = opt.get('time') or timer
                     suffix = TIMER_SUFFIX_MAP.get(opt_timer, f't{opt_timer}s')
                     for product in opt.get('products') or []:
-                        resources = (product.get('playerResources') or {}).get('resources') or {}
-                        for res_key, val in resources.items():
-                            if val:
-                                stats[f'{res_key}_{suffix}'] = val
+                        p_type = product.get('type') or ''
+                        motivated_only = product.get('onlyWhenMotivated', False)
+
+                        if p_type == 'resources':
+                            resources = (product.get('playerResources') or {}).get('resources') or {}
+                            for res_key, val in resources.items():
+                                if val:
+                                    key = f'{res_key}_{suffix}'
+                                    stats[key] = (stats.get(key) or 0) + val
+
+                        elif p_type == 'random':
+                            for entry in product.get('products') or []:
+                                drop_chance = entry.get('dropChance') or 0
+                                if not drop_chance:
+                                    continue
+                                inner = entry.get('product') or {}
+                                resources = (inner.get('playerResources') or {}).get('resources') or {}
+                                for res_key, val in resources.items():
+                                    if val:
+                                        key = f'{res_key}_{suffix}'
+                                        stats[key] = round((stats.get(key) or 0) + val * drop_chance, 2)
+
+                        elif p_type == 'genericReward' and motivated_only:
+                            reward_id = (product.get('reward') or {}).get('id') or ''
+                            chest = lookup_rewards.get(reward_id) or {}
+                            possible = chest.get('possible_rewards') or []
+                            if possible:
+                                unit_amount = (possible[0].get('reward') or {}).get('amount') or 0
+                                if unit_amount:
+                                    key = f'units_{suffix}'
+                                    stats[key] = (stats.get(key) or 0) + unit_amount
 
             if stats:
                 result[era] = stats

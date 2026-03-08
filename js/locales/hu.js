@@ -366,6 +366,9 @@ export const HU = {
     'optimizer.compacting': 'Elrendezés tömörítése...',
     'optimizer.done':       'Kész! {{placed}}/{{total}} épület, {{roads}} út, {{strategies}} stratégia, {{elapsed}}mp ({{strategy}})',
 
+    // ── Vászon ───────────────────────────────────────────────────────────
+    'canvas.getStarted': 'Importáld a városod, vagy helyezz el épületeket a kezdéshez',
+
     // ── Épületlista ───────────────────────────────────────────────────────
     'building.townhallPlaced': 'Városháza már le van helyezve',
 

@@ -1176,12 +1176,12 @@ export class CityPlanner {
             items:      r => this._readEffCol(r, ['Items']),
         };
 
-        // Build name → [[id, template]] lookup
+        // Build name → id lookup from placed buildings (names are in the user's FOE Helper language)
         const nameMap = new Map();
-        for (const [id, t] of Object.entries(this.buildingTemplates)) {
-            const key = t.name.trim().toLowerCase();
-            if (!nameMap.has(key)) nameMap.set(key, []);
-            nameMap.get(key).push([id, t]);
+        for (const b of [...this.buildings, ...this.buildingPool]) {
+            if (!b.id || !b.name) continue;
+            const key = b.name.trim().toLowerCase();
+            if (!nameMap.has(key)) nameMap.set(key, b.id);
         }
 
         const matched   = [];
@@ -1195,18 +1195,15 @@ export class CityPlanner {
             const baseName = rawName.replace(/\s*[-–]\s*(\d+\.\s*szint|level\s*\d+)\s*$/i, '').trim();
             const count    = C.count(row);
 
-            let candidates = nameMap.get(rawName.toLowerCase())
-                          || nameMap.get(baseName.toLowerCase())
-                          || null;
+            const id = nameMap.get(rawName.toLowerCase())
+                    || nameMap.get(baseName.toLowerCase())
+                    || null;
+            const template = id ? this.buildingTemplates[id] : null;
 
-            if (!candidates || candidates.length === 0) {
+            if (!id || !template) {
                 unmatched.push({ name: rawName, count });
                 continue;
             }
-
-            const [id, template] = candidates.find(([, t]) =>
-                t.name.trim().toLowerCase() === rawName.toLowerCase()
-            ) || candidates[0];
 
             // ── Extract & scale stats ──────────────────────────────────────
             const area = perTile ? (template.width * template.height) : 1;
@@ -1259,7 +1256,7 @@ export class CityPlanner {
             for (let i = 0; i < count; i++) {
                 const entry = {
                     id,
-                    name:      template.name,
+                    name:      rawName,
                     width:     template.width,
                     height:    template.height,
                     type:      template.type,

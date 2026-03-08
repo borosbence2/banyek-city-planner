@@ -37,7 +37,7 @@ const MULTI_AGE_CODES = new Set(['MultiAge', 'AllAge', 'NoAge']);
 const RESOURCE_ORDER = [
     'money', 'supplies', 'strategy_points', 'medals', 'premium',
     'goods', 'clan_goods', 'diplomacy_currency',
-    'finish_special_production', 'action_points',
+    'finish_special_production', 'action_points', 'units',
 ];
 
 const RESOURCE_LABELS = {
@@ -51,6 +51,7 @@ const RESOURCE_LABELS = {
     diplomacy_currency:  '🤝 Diplomacy Goods',
     finish_special_production: '🧩 Fragments (special prod.)',
     action_points:       '🎯 Action Points',
+    units:               '⚔️ Units (motivated)',
     // Quantum Incursion (Guild Raids) resources
     guild_raids_population:   '👥 QI Population',
     guild_raids_happiness:    '😊 QI Happiness',
@@ -149,21 +150,11 @@ export class ProductionOverview {
         const poolCounts = {};
         let hasProdData = false;
 
-        const nameIndex = {};
-        for (const [key, t] of Object.entries(this.planner.buildingTemplates)) {
-            const nk = `${t.name}|${t.width}|${t.height}`;
-            if (!nameIndex[nk]) nameIndex[nk] = key;
-        }
-
         const processBuilding = (b, counts) => {
             const type = b.type || 'unknown';
             counts[type] = (counts[type] || 0) + 1;
 
-            let templateKey = (b.id && this.planner.buildingTemplates[b.id]) ? b.id : null;
-            if (!templateKey) {
-                const nk = `${b.name}|${b.width}|${b.height}`;
-                templateKey = nameIndex[nk] || null;
-            }
+            const templateKey = (b.id && this.planner.buildingTemplates[b.id]) ? b.id : null;
             const template = templateKey ? this.planner.buildingTemplates[templateKey] : null;
 
             // ── Choose stat source ────────────────────────────────────────

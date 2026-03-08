@@ -366,6 +366,9 @@ export const EN = {
     'optimizer.compacting': 'Compacting layout...',
     'optimizer.done':       'Done! {{placed}}/{{total}} buildings, {{roads}} roads, {{strategies}} strategies, {{elapsed}}s ({{strategy}})',
 
+    // ── Canvas ────────────────────────────────────────────────────────────
+    'canvas.getStarted': 'Import your city or place buildings manually to get started',
+
     // ── Building list ─────────────────────────────────────────────────────
     'building.townhallPlaced': 'Town hall already placed',
 
