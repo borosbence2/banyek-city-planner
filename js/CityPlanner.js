@@ -1,6 +1,7 @@
 import { CONSTANTS, CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES } from './constants.js';
 import { track } from './analytics.js';
 export { CITY_TYPES, SETTLEMENT_TYPES, COLONY_TYPES }; // re-export for convenience
+import { t, applyDOM, createLangPicker } from './i18n.js';
 import { Utils }              from './utils.js';
 import { Renderer }           from './Renderer.js';
 import { EventHandler }       from './EventHandler.js';
@@ -105,6 +106,21 @@ export class CityPlanner {
         this.updateCityTabs();
         this._loadFromUrlHash();
 
+        // i18n: apply DOM translations, build pickers and dynamic content
+        createLangPicker();
+        applyDOM();
+        this.renderColorLegend();
+        this.renderHelpModal();
+        // Re-render on language change
+        window.addEventListener('localechange', () => {
+            applyDOM();
+            this.renderColorLegend();
+            this.renderHelpModal();
+            this.updatePoolPanel();
+            this.updateSettlementTypePicker();
+            this.updateColonyTypePicker();
+        });
+
         if (!localStorage.getItem('foe_visited')) {
             localStorage.setItem('foe_visited', '1');
             this.showModal('helpModal');
@@ -125,11 +141,11 @@ export class CityPlanner {
         this._clearActiveBuildingBtn();
         this._setActiveToolBtn('roadBtn');
 
-        this.updateStatus('Road placement active');
+        this.updateStatus(t('status.roadPlacement'));
 
         this.showModeBanner(`
-            <strong>🛣 Road Placement Mode</strong><br>
-            Drag to paint • Press ESC to exit
+            <strong>${t('banner.roadTitle')}</strong><br>
+            ${t('banner.roadHint')}
         `);
     }
 
@@ -160,11 +176,11 @@ export class CityPlanner {
         this._clearActiveBuildingBtn();
         this._setActiveToolBtn('wideRoadBtn');
 
-        this.updateStatus('Wide road placement active');
+        this.updateStatus(t('status.wideRoad'));
 
         this.showModeBanner(`
-            <strong>🛤 Wide Road Placement Mode (2×2)</strong><br>
-            Drag to paint • Press ESC to exit
+            <strong>${t('banner.wideRoadTitle')}</strong><br>
+            ${t('banner.roadHint')}
         `);
     }
 
@@ -243,11 +259,11 @@ export class CityPlanner {
 
         this._setActiveToolBtn(null);
         this._highlightActiveBuildingBtn(template.id);
-        this.updateStatus(`Placing: ${template.name} (ESC to cancel)`);
+        this.updateStatus(t('status.placing', { name: template.name }));
         this.showModeBanner(`
-            <strong>🏗 Placing: ${template.name}</strong>
-            <span class="mode-banner-size">${template.width}×${template.height}</span><br>
-            Click to place • ESC to exit
+            <strong>${t('banner.placingTitle', { name: template.name })}</strong>
+            <span class="mode-banner-size">${t('banner.placingSize', { w: template.width, h: template.height })}</span><br>
+            ${t('banner.placingHint')}
         `);
     }
 
@@ -410,7 +426,7 @@ export class CityPlanner {
                 this.selectedTemplate = null;
                 this._clearActiveBuildingBtn();
                 this.hideModeBanner();
-                this.updateStatus('Mode: Select/Move');
+                this.updateStatus(t('status.selectMove'));
             }
 
             this.renderer.draw();
@@ -545,7 +561,7 @@ export class CityPlanner {
         if (this.buildingPool.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'pool-empty';
-            empty.textContent = 'No buildings here yet.\nDrag a building off the grid to store it.';
+            empty.textContent = t('pool.empty');
             list.appendChild(empty);
             return;
         }
@@ -673,11 +689,11 @@ export class CityPlanner {
                     this.buildingPool.splice(poolIdx, 1);
                     this.buildings.push({ ...building, x: gridPos.x, y: gridPos.y });
                     this.updatePoolPanel();
-                    this.updateStatus(`Placed ${building.name}`);
-                    setTimeout(() => this.updateStatus('Mode: Select/Move'), 1500);
+                    this.updateStatus(t('status.placed', { name: building.name }));
+                    setTimeout(() => this.updateStatus(t('status.selectMove')), 1500);
                 } else {
-                    this.updateStatus('Cannot place building here — returned to pool');
-                    setTimeout(() => this.updateStatus('Mode: Select/Move'), 2000);
+                    this.updateStatus(t('status.cannotPlace'));
+                    setTimeout(() => this.updateStatus(t('status.selectMove')), 2000);
                 }
             }
             this.renderer.draw();
@@ -696,19 +712,19 @@ export class CityPlanner {
     // ========================================
     zoomIn() {
         this.zoom = Math.min(CONSTANTS.MAX_ZOOM, this.zoom * CONSTANTS.ZOOM_STEP);
-        this.updateStatus(`Zoom: ${Math.round(this.zoom * 100)}%`);
+        this.updateStatus(t('status.zoom', { pct: Math.round(this.zoom * 100) }));
         this.renderer.draw();
     }
 
     zoomOut() {
         this.zoom = Math.max(CONSTANTS.MIN_ZOOM, this.zoom / CONSTANTS.ZOOM_STEP);
-        this.updateStatus(`Zoom: ${Math.round(this.zoom * 100)}%`);
+        this.updateStatus(t('status.zoom', { pct: Math.round(this.zoom * 100) }));
         this.renderer.draw();
     }
 
     resetView() {
         this.zoom = 1.0; this.panX = 0; this.panY = 0;
-        this.updateStatus('View reset');
+        this.updateStatus(t('status.viewReset'));
         this.renderer.draw();
     }
 
@@ -741,10 +757,10 @@ export class CityPlanner {
         this._clearActiveBuildingBtn();
         this._setActiveToolBtn('addExpansionBtn');
         this.hoverPos = null;
-        this.updateStatus('Expansion placement active');
+        this.updateStatus(t('status.expansion'));
         this.showModeBanner(`
-            <strong>⬛ Expansion Placement Mode</strong><br>
-            Click to place 4×4 expansion • Press ESC to exit
+            <strong>${t('banner.expansionTitle')}</strong><br>
+            ${t('banner.expansionHint')}
         `);
         this.renderer.draw();
     }
@@ -776,7 +792,7 @@ export class CityPlanner {
         this.unlockedAreas.push({ x, y, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true });
         this.rebuildUnlockedCells(); // also calls _recomputeGridBounds
         this.resizeCanvas();
-        this.updateStatus(`Expansion #${nextIndex + 1} placed`);
+        this.updateStatus(t('status.expansionPlaced', { num: nextIndex + 1 }));
         this.renderer.draw();
     }
 
@@ -807,14 +823,14 @@ export class CityPlanner {
         this.renderer.draw();
 
         const msg = displaced.length > 0
-            ? `Expansion removed — ${displaced.length} building(s) moved to pool`
-            : 'Expansion removed';
+            ? t('status.expansionRemovedBuildings', { count: displaced.length })
+            : t('status.expansionRemoved');
         this.updateStatus(msg);
-        setTimeout(() => this.updateStatus('Mode: Select/Move'), 2500);
+        setTimeout(() => this.updateStatus(t('status.selectMove')), 2500);
     }
 
     fitGridToContent() {
-        if (this.buildings.length === 0) { alert('No buildings to fit to!'); return; }
+        if (this.buildings.length === 0) { alert(t('alert.noBuildings')); return; }
         let maxX = 0, maxY = 0;
         this.buildings.forEach(b => { maxX = Math.max(maxX, b.x + b.width); maxY = Math.max(maxY, b.y + b.height); });
         this.gridWidth  = Math.max(CONSTANTS.MIN_GRID_SIZE, maxX + 2);
@@ -879,13 +895,13 @@ export class CityPlanner {
         // ── QI: type-based collapsible groups ─────────────────────────────
         if (isQI) {
             const QI_TYPE_ORDER = [
-                ['residential', 'Residential'],
-                ['production',  'Production'],
-                ['goods',       'Goods'],
-                ['culture',     'Culture'],
-                ['military',    'Military'],
-                ['main_building','Town Hall'],
-                ['impediment',  'Impediments'],
+                ['residential', t('qi.residential')],
+                ['production',  t('qi.production')],
+                ['goods',       t('qi.goods')],
+                ['culture',     t('qi.culture')],
+                ['military',    t('qi.military')],
+                ['main_building', t('qi.main_building')],
+                ['impediment',  t('qi.impediment')],
             ];
 
             // Deduplicate impediments: keep only one entry per WxH size
@@ -1054,7 +1070,7 @@ export class CityPlanner {
                 this.buildingPool.some(b => this.isTownhall(b));
             if (alreadyExists) {
                 btn.disabled = true;
-                btn.title = 'Town hall already placed';
+                btn.title = t('building.townhallPlaced');
                 return btn;
             }
         }
@@ -1140,7 +1156,7 @@ export class CityPlanner {
      * copies of matched buildings carry the same stats.
      */
     importEfficiencyRating(rows, perTile = true) {
-        if (!Array.isArray(rows)) { alert('Expected a JSON array.'); return; }
+        if (!Array.isArray(rows)) { alert(t('alert.expectedArray')); return; }
 
         // Column variants for multi-language support (Hungarian, English, German)
         const C = {
@@ -1289,18 +1305,17 @@ export class CityPlanner {
 
         const totalAdded = matched.reduce((s, m) => s + m.count, 0);
         document.getElementById('efficiencyImportBody').innerHTML = `
-            <p>Added <strong>${totalAdded}</strong> buildings to the pool
-               (${matched.length} types matched)${perTile ? ' — values scaled by tile area' : ''}.</p>
+            <p>${t('effModal.added', { count: totalAdded, types: matched.length, perTile: perTile ? t('effModal.perTile') : '' })}</p>
             ${matchedRows ? `
             <details open>
                 <summary style="cursor:pointer;font-weight:bold;margin-bottom:6px">
-                    ✅ Matched (${matched.length})
+                    ${t('effModal.matched', { count: matched.length })}
                 </summary>
                 <table style="width:100%;border-collapse:collapse;font-size:12px">
                     <thead><tr>
-                        <th style="text-align:left">Building</th>
-                        <th>#</th>
-                        <th style="text-align:left">Stats</th>
+                        <th style="text-align:left">${t('effModal.colBuilding')}</th>
+                        <th>${t('effModal.colCount')}</th>
+                        <th style="text-align:left">${t('effModal.colStats')}</th>
                     </tr></thead>
                     <tbody>${matchedRows}</tbody>
                 </table>
@@ -1308,10 +1323,10 @@ export class CityPlanner {
             ${unmatchedRows ? `
             <details ${matched.length === 0 ? 'open' : ''}>
                 <summary style="cursor:pointer;font-weight:bold;margin:6px 0;color:#c44">
-                    ⚠️ Not found in database (${unmatched.length})
+                    ${t('effModal.notFound', { count: unmatched.length })}
                 </summary>
                 <table style="width:100%;border-collapse:collapse;font-size:12px">
-                    <thead><tr><th style="text-align:left">Building</th><th>#</th><th></th></tr></thead>
+                    <thead><tr><th style="text-align:left">${t('effModal.colBuilding')}</th><th>${t('effModal.colCount')}</th><th></th></tr></thead>
                     <tbody>${unmatchedRows}</tbody>
                 </table>
             </details>` : ''}
@@ -1334,8 +1349,8 @@ export class CityPlanner {
                 Object.entries(this.buildingTemplates).filter(([id]) => id.startsWith('custom_'))
             ),
         };
-        document.getElementById('modalTitle').textContent       = 'Save Layout';
-        document.getElementById('modalInstructions').textContent = 'Copy this JSON to save your layout:';
+        document.getElementById('modalTitle').textContent       = t('saveModal.title');
+        document.getElementById('modalInstructions').textContent = t('saveModal.instructions');
         document.getElementById('saveLoadText').value           = JSON.stringify(data, null, 2);
         document.getElementById('copyBtn').style.display        = 'inline-block';
         document.getElementById('loadConfirmBtn').style.display = 'none';
@@ -1460,7 +1475,7 @@ export class CityPlanner {
     exportPDF() {
         track('export-pdf', 'Export PDF');
         const { jsPDF } = window.jspdf;
-        if (!jsPDF) { alert('PDF library not loaded yet — please try again in a moment.'); return; }
+        if (!jsPDF) { alert(t('alert.pdfNotLoaded')); return; }
 
         const CITY_LABELS = {
             main: 'Main City', settlement: 'Cultural Settlement',
@@ -1774,12 +1789,12 @@ export class CityPlanner {
         // ── 6. Save ───────────────────────────────────────────────────────────
         const dateStr = new Date().toISOString().slice(0, 10);
         doc.save(`foe-city-${this.activeCityType}-${dateStr}.pdf`);
-        this.updateStatus('PDF exported');
+        this.updateStatus(t('status.pdfExported'));
     }
 
     showLoadModal() {
-        document.getElementById('modalTitle').textContent       = 'Load Layout';
-        document.getElementById('modalInstructions').textContent = 'Paste your saved JSON here:';
+        document.getElementById('modalTitle').textContent       = t('loadModal.title');
+        document.getElementById('modalInstructions').textContent = t('loadModal.instructions');
         document.getElementById('saveLoadText').value           = '';
         document.getElementById('copyBtn').style.display        = 'none';
         document.getElementById('loadConfirmBtn').style.display = 'inline-block';
@@ -1799,10 +1814,10 @@ export class CityPlanner {
 
         if (this.selectedBuilding) {
             const deleteHint = this.isTownhall(this.selectedBuilding)
-                ? 'Press DELETE to stash to pool'
-                : 'Press DELETE to remove';
+                ? t('banner.stashHint')
+                : t('banner.deleteHint');
             this.showModeBanner(`
-                <strong>🏢 Building Selected</strong><br>
+                <strong>${t('banner.buildingSelected')}</strong><br>
                 ${deleteHint}
             `);
             return;
@@ -1810,8 +1825,8 @@ export class CityPlanner {
 
         if (this.selectedRoad) {
             this.showModeBanner(`
-                <strong>🛣 Road Selected</strong><br>
-                Press DELETE to remove
+                <strong>${t('banner.roadSelected')}</strong><br>
+                ${t('banner.deleteHint')}
             `);
             return;
         }
@@ -1823,6 +1838,140 @@ export class CityPlanner {
         const banner = document.getElementById('modeBanner');
         banner.classList.remove('visible');
         banner.classList.add('hidden');
+    }
+
+    renderColorLegend() {
+        const el = document.getElementById('colorLegend');
+        if (!el) return;
+
+        const swatch = (color, label, extra = '') =>
+            `<div style="display:flex;align-items:center;margin-bottom:3px;">
+                <span style="display:inline-block;width:14px;height:14px;background:${color};border:1px solid rgba(0,0,0,0.25);margin-right:6px;flex-shrink:0;${extra}"></span>
+                <span>${label}</span>
+            </div>`;
+
+        const note = text =>
+            `<div style="margin-top:6px;font-size:10px;color:#777;line-height:1.5;">${text.replace(/\n/g, '<br>')}</div>`;
+
+        const C = CONSTANTS.COLORS;
+
+        el.innerHTML = `
+            <div class="legend-normal">
+                ${swatch(C.RESIDENTIAL,    t('legend.residential'))}
+                ${swatch(C.PRODUCTION,     t('legend.production'))}
+                ${swatch(C.GOODS,          t('legend.goods'))}
+                ${swatch(C.CULTURE,        t('legend.culture'))}
+                ${swatch(C.MILITARY,       t('legend.military'))}
+                ${swatch(C.GREAT_BUILDING, t('legend.great'))}
+                ${swatch(C.TOWN_HALL,      t('legend.townhall'))}
+                ${swatch(C.EVENT,          t('legend.events'))}
+                ${swatch(C.ROAD,           t('legend.roads'))}
+                ${swatch(C.WIDE_ROAD,      t('legend.wideRoads'))}
+                ${note(t('legend.normalNote'))}
+            </div>
+            <div class="legend-expiry">
+                ${swatch('#37474F', t('legend.inactive'))}
+                ${swatch('#FF1744', t('legend.expires24h'))}
+                ${swatch('#EF5350', t('legend.expires7d'))}
+                ${swatch('#FF8F00', t('legend.expires30d'))}
+                ${swatch('#66BB6A', t('legend.expires90d'))}
+                ${swatch('#2E7D32', t('legend.active90d'))}
+                ${swatch('#78909C', t('legend.permanent'))}
+                ${note(t('legend.activityNote'))}
+            </div>
+            <div class="legend-roads">
+                ${swatch('#43A047', t('legend.connected'))}
+                ${swatch('#E53935', t('legend.notConnected'))}
+                ${swatch('#78909C', t('legend.noRoad'))}
+                ${swatch('#26C6DA', t('legend.roadCell'))}
+                ${note(t('legend.roadsNote'))}
+            </div>
+        `;
+    }
+
+    renderHelpModal() {
+        const el = document.getElementById('helpBody');
+        if (!el) return;
+
+        const kbRow = (keys, desc) =>
+            `<tr><td>${keys}</td><td>${desc}</td></tr>`;
+
+        const kbd = (...keys) => keys.map(k => `<kbd>${k}</kbd>`).join(' / ');
+
+        el.innerHTML = `
+            <div class="help-quickstart">
+                <div class="qs-step"><span class="qs-num">1</span><span><strong>${t('helpModal.qs1Title')}</strong><br>${t('helpModal.qs1Desc')}</span></div>
+                <div class="qs-step"><span class="qs-num">2</span><span><strong>${t('helpModal.qs2Title')}</strong><br>${t('helpModal.qs2Desc')}</span></div>
+                <div class="qs-step"><span class="qs-num">3</span><span><strong>${t('helpModal.qs3Title')}</strong><br>${t('helpModal.qs3Desc')}</span></div>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.importTitle')}</h3>
+                <ol>
+                    <li>${t('helpModal.importStep1')}</li>
+                    <li>${t('helpModal.importStep2')}</li>
+                    <li>${t('helpModal.importStep3')}</li>
+                    <li>${t('helpModal.importStep4')}</li>
+                </ol>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.buildingTitle')}</h3>
+                <ul>
+                    <li>${t('helpModal.buildingHint1')}</li>
+                    <li>${t('helpModal.buildingHint2')}</li>
+                    <li>${t('helpModal.buildingHint3')}</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.optimizerTitle')}</h3>
+                <ul>
+                    <li>${t('helpModal.optimizerHint1')}</li>
+                    <li>${t('helpModal.optimizerHint2')}</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.tabsTitle')}</h3>
+                <ul>
+                    <li>${t('helpModal.tabMain')}</li>
+                    <li>${t('helpModal.tabSettlement')}</li>
+                    <li>${t('helpModal.tabColony')}</li>
+                    <li>${t('helpModal.tabQuantum')}</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.saveTitle')}</h3>
+                <ul>
+                    <li>${t('helpModal.saveHint')}</li>
+                    <li>${t('helpModal.loadHint')}</li>
+                    <li>${t('helpModal.shareHint')}</li>
+                    <li>${t('helpModal.pngHint')}</li>
+                    <li>${t('helpModal.pdfHint')}</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>${t('helpModal.keyboardTitle')}</h3>
+                <table class="shortcuts-table">
+                    ${kbRow(kbd('R'),            t('helpModal.kb.road'))}
+                    ${kbRow(kbd('W'),            t('helpModal.kb.wideRoad'))}
+                    ${kbRow(kbd('E'),            t('helpModal.kb.expansion'))}
+                    ${kbRow(kbd('Delete'),       t('helpModal.kb.delete'))}
+                    ${kbRow(kbd('Esc'),          t('helpModal.kb.esc'))}
+                    ${kbRow(kbd('↑','↓','←','→'), t('helpModal.kb.arrows'))}
+                    ${kbRow(kbd('+','-'),        t('helpModal.kb.zoom'))}
+                    ${kbRow(kbd('Home'),         t('helpModal.kb.resetView'))}
+                    ${kbRow(kbd('M'),            t('helpModal.kb.minimap'))}
+                    ${kbRow(kbd('Ctrl+S'),       t('helpModal.kb.save'))}
+                </table>
+            </div>
+
+            <div class="help-about">${t('helpModal.about')}</div>
+            <div class="help-about">${t('helpModal.forras')}</div>
+        `;
     }
 
     loadLayout() {
@@ -1853,9 +2002,9 @@ export class CityPlanner {
             this.restoreSnapshot(this.cities[this.activeCityType]);
             this.updateCityTabs();
             this.hideModal('saveLoadModal');
-            alert('Layout loaded successfully!');
+            alert(t('alert.layoutLoaded'));
         } catch (e) {
-            alert('Error loading layout: ' + e.message);
+            alert(t('alert.layoutLoadError', { error: e.message }));
         }
     }
 
@@ -1863,7 +2012,7 @@ export class CityPlanner {
         const text = document.getElementById('saveLoadText');
         text.select();
         document.execCommand('copy');
-        alert('Copied to clipboard!');
+        alert(t('alert.copied'));
     }
 
     // ========================================
@@ -1890,7 +2039,7 @@ export class CityPlanner {
             document.getElementById('shareUrlText').value = url;
             this.showModal('shareModal');
         } catch (e) {
-            alert('Failed to generate share link: ' + e.message);
+            alert(t('alert.shareError', { error: e.message }));
         }
     }
 
@@ -1901,7 +2050,7 @@ export class CityPlanner {
 
         const btn = document.getElementById('copyShareUrlBtn');
         const orig = btn.textContent;
-        btn.textContent = 'Copied!';
+        btn.textContent = t('saveModal.copied');
         setTimeout(() => { btn.textContent = orig; }, 1500);
     }
 
@@ -1957,11 +2106,11 @@ export class CityPlanner {
             align-items:center; justify-content:center; gap:12px;
         `;
         banner.innerHTML = `
-            <span>📋 You're viewing a shared layout. Changes you make are local only.</span>
+            <span>${t('shared.banner')}</span>
             <button onclick="this.parentElement.remove()" style="
                 background:rgba(255,255,255,0.25); border:none; color:#fff;
                 padding:3px 10px; border-radius:4px; cursor:pointer; font-size:13px;
-            ">Dismiss</button>
+            ">${t('shared.dismiss')}</button>
         `;
         document.body.prepend(banner);
     }
@@ -2021,7 +2170,7 @@ export class CityPlanner {
     }
 
     clearAll() {
-        if (!confirm('Clear all buildings and roads?')) return;
+        if (!confirm(t('alert.clearConfirm'))) return;
         this.buildings   = [];
         this.roads       = new Set();
         this.wideRoads   = new Set();

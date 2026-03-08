@@ -1,5 +1,6 @@
 import { Utils } from './utils.js';
 import { SETTLEMENT_TYPES, COLONY_TYPES } from './constants.js';
+import { t } from './i18n.js';
 
 // Grid cell constants for Uint8Array
 const FREE = 0, BUILDING = 1, ROAD = 2, TOWNHALL = 3, BLOCKED = 4;
@@ -23,12 +24,12 @@ export class Optimizer {
         const p = this.p;
 
         if (p.buildings.length === 0 && p.buildingPool.length === 0) {
-            alert('No buildings to optimize!');
+            alert(t('alert.noOptimize'));
             return;
         }
 
         this._running = true;
-        this.setProgress(0, 'Starting optimization...');
+        this.setProgress(0, t('optimizer.starting'));
         document.getElementById('progressContainer').classList.add('active');
         document.getElementById('optimizeBtn').disabled = true;
 
@@ -37,7 +38,7 @@ export class Optimizer {
             document.getElementById('undoOptimizeBtn').style.display = 'block';
         } catch (err) {
             console.error('Optimizer error:', err);
-            alert('Optimization failed: ' + err.message);
+            alert(t('alert.optimizeFailed', { error: err.message }));
         } finally {
             this._running = false;
             document.getElementById('progressContainer').classList.remove('active');
@@ -47,7 +48,7 @@ export class Optimizer {
 
     undo() {
         if (!this._snapshot) {
-            alert('No optimization to undo!');
+            alert(t('alert.noUndoOptimize'));
             return;
         }
         const p = this.p;
@@ -67,7 +68,7 @@ export class Optimizer {
         p.resizeCanvas();
         p.updatePoolPanel();
         p.renderer.draw();
-        alert('Optimization undone!');
+        alert(t('alert.optimizeUndone'));
     }
 
     setProgress(percent, text) {
@@ -165,7 +166,7 @@ export class Optimizer {
                 globalBest.buildings.filter(b => !p.isTownhall(b))
             );
             if (medInLayout.length > 0) {
-                this.setProgress(91, `Re-placing ${medInLayout.length} medium buildings (short side → road)...`);
+                this.setProgress(91, t('optimizer.medium', { count: medInLayout.length }));
                 await this.yieldUI();
 
                 const { thLX, thLY } = globalBest;
@@ -203,7 +204,7 @@ export class Optimizer {
         }
 
         // ── Post-processing ──────────────────────────────────────────────
-        this.setProgress(92, 'Compacting layout...');
+        this.setProgress(92, t('optimizer.compacting'));
         await this.yieldUI();
 
         const finalGrid = Array.from({ length: H }, (_, r) =>
@@ -251,11 +252,14 @@ export class Optimizer {
         p.buildingPool = unplacedPool;
 
         const elapsed = ((Date.now() - ctx.startTime) / 1000).toFixed(1);
-        this.setProgress(100,
-            `Done! ${globalBest.buildingsPlaced}/${roadBuildings.length} buildings, ` +
-            `${finalRoads.size} roads, ${strategiesTried} strategies, ${elapsed}s ` +
-            `(${globalBest.strategy})`
-        );
+        this.setProgress(100, t('optimizer.done', {
+            placed:     globalBest.buildingsPlaced,
+            total:      roadBuildings.length,
+            roads:      finalRoads.size,
+            strategies: strategiesTried,
+            elapsed,
+            strategy:   globalBest.strategy,
+        }));
         p.updatePoolPanel();
         p.renderer.draw();
     }

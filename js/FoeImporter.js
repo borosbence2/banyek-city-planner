@@ -1,5 +1,6 @@
 import { CONSTANTS } from './constants.js';
 import { track } from './analytics.js';
+import { t } from './i18n.js';
 
 export class FoeImporter {
     constructor(planner) {
@@ -21,13 +22,15 @@ export class FoeImporter {
                 if (!snapshot) continue;
 
                 p.cities[cityType] = snapshot;
-                summaryParts.push(
-                    `${cityType}: ${snapshot.buildings.length} buildings, ${snapshot.roads.length} roads`
-                );
+                summaryParts.push(t('import.summary', {
+                    city: cityType,
+                    buildings: snapshot.buildings.length,
+                    roads: snapshot.roads.length,
+                }));
             }
 
             if (summaryParts.length === 0) {
-                alert('No city data could be imported. Check that the JSON matches the selected city types.');
+                alert(t('alert.importFailed'));
                 return;
             }
 
@@ -38,12 +41,12 @@ export class FoeImporter {
             track('import-foe', 'Import from FoE Helper');
 
             const pooled = p.buildingPool.length;
-            const poolNote = pooled > 0 ? `\n${pooled} building(s) placed in the Building Pool (were outside the grid).` : '';
-            alert(`Import complete!\n\n${summaryParts.join('\n')}${poolNote}`);
+            const poolNote = pooled > 0 ? t('alert.importPoolNote', { count: pooled }) : '';
+            alert(t('alert.importComplete', { summary: summaryParts.join('\n'), poolNote }));
 
         } catch (error) {
             console.error('Import error:', error);
-            alert(`Error importing city data: ${error.message}\n\nPlease make sure you copied the complete JSON from FoE Helper.`);
+            alert(t('alert.importError', { error: error.message }));
         }
     }
 
@@ -392,13 +395,13 @@ export class FoeImporter {
             return;
         }
 
-        let html = `<strong>City Imported!</strong><br>`;
-        html += `${p.buildings.length} buildings + ${p.roads.size} roads<br>`;
-        html += `<small>Imported: ${p.cityMetadata.importedAt}</small>`;
+        let html = `<strong>${t('cityInfo.imported')}</strong><br>`;
+        html += `${t('cityInfo.buildings', { buildings: p.buildings.length, roads: p.roads.size })}<br>`;
+        html += `<small>${t('cityInfo.importedAt', { date: p.cityMetadata.importedAt })}</small>`;
 
         if (p.cityMetadata.greatBuildings?.length > 0) {
             html += `<div style="margin-top:15px;border-top:1px solid #ddd;padding-top:10px;">`;
-            html += `<strong>🏛️ Great Buildings (${p.cityMetadata.greatBuildings.length}):</strong><br>`;
+            html += `<strong>${t('cityInfo.greatBuildings', { count: p.cityMetadata.greatBuildings.length })}</strong><br>`;
             html += `<div style="font-size:11px;max-height:200px;overflow-y:auto;">`;
 
             p.cityMetadata.greatBuildings.sort((a, b) => a.name.localeCompare(b.name));
@@ -408,7 +411,7 @@ export class FoeImporter {
                 html += `<div style="margin:8px 0;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
                         <span style="font-weight:500;">${gb.name}</span>
-                        <span style="color:#666;">Lv ${gb.level}/${gb.maxLevel}</span>
+                        <span style="color:#666;">${t('cityInfo.level', { current: gb.level, max: gb.maxLevel })}</span>
                     </div>
                     <div style="background:#e0e0e0;height:6px;border-radius:3px;overflow:hidden;">
                         <div style="background:${barColor};width:${progress}%;height:100%;"></div>
@@ -422,19 +425,19 @@ export class FoeImporter {
         if (eff) {
             const pct      = eff.efficiency.toFixed(1);
             const effColor = eff.efficiency < 80 ? '#FF9800' : eff.efficiency > 110 ? '#2196F3' : '#4CAF50';
-            const effText  = eff.efficiency < 80 ? 'Too many roads' : eff.efficiency > 110 ? 'Very efficient!' : 'Excellent!';
+            const effText  = eff.efficiency < 80 ? t('cityInfo.tooManyRoads') : eff.efficiency > 110 ? t('cityInfo.veryEfficient') : t('cityInfo.excellent');
 
             html += `<div style="margin-top:15px;border-top:1px solid #ddd;padding-top:10px;">
-                <strong>🛣️ Street Efficiency:</strong>
+                <strong>${t('cityInfo.streetEfficiency')}</strong>
                 <div style="font-size:11px;margin-top:5px;">
                     <div style="display:flex;justify-content:space-between;margin:3px 0;">
-                        <span>Efficiency:</span><span style="color:${effColor};font-weight:bold;">${pct}%</span>
+                        <span>${t('cityInfo.efficiency')}</span><span style="color:${effColor};font-weight:bold;">${pct}%</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin:3px 0;">
-                        <span>Streets needed:</span><span>${eff.needed.toFixed(1)}</span>
+                        <span>${t('cityInfo.streetsNeeded')}</span><span>${eff.needed.toFixed(1)}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin:3px 0;">
-                        <span>Streets used:</span><span>${eff.used}</span>
+                        <span>${t('cityInfo.streetsUsed')}</span><span>${eff.used}</span>
                     </div>
                     <div style="margin-top:5px;padding:5px;background:#f5f5f5;border-radius:3px;font-size:10px;">
                         <strong style="color:${effColor};">${effText}</strong>

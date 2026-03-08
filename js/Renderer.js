@@ -91,19 +91,15 @@ export class Renderer {
 
         const dark = this.isDark;
         const cx = canvas.width / 2;
-        const cy = canvas.height / 2 + 60;
+        const cy = canvas.height - 28;
 
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = 'bold 15px system-ui, sans-serif';
-        ctx.fillStyle = dark ? 'rgba(160,160,200,0.85)' : 'rgba(80,80,120,0.75)';
-        ctx.fillText('Import your city to get started', cx, cy);
-
-        ctx.font = '13px system-ui, sans-serif';
-        ctx.fillStyle = dark ? 'rgba(120,120,160,0.65)' : 'rgba(120,120,160,0.65)';
-        ctx.fillText('or place buildings and roads manually using the sidebar', cx, cy + 22);
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.fillStyle = dark ? 'rgba(140,140,190,0.7)' : 'rgba(100,100,150,0.75)';
+        ctx.fillText('Import your city or place buildings manually to get started', cx, cy);
 
         ctx.restore();
     }
@@ -288,17 +284,18 @@ export class Renderer {
                     ctx.strokeRect(x, y, aw, ah);
                     ctx.restore();
                 } else if (area.manual) {
-                    // User-placed expansion — green border + number
+                    // User-placed expansion — subtle green border + number
                     manualIndex++;
-                    ctx.strokeStyle = dark ? '#66bb6a' : '#2e7d32';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([]);
+                    ctx.strokeStyle = dark ? 'rgba(102,187,106,0.3)' : 'rgba(46,125,50,0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
                     ctx.strokeRect(x, y, aw, ah);
-                    ctx.fillStyle = dark ? '#66bb6a' : '#2e7d32';
-                    ctx.font = 'bold 10px Arial';
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = dark ? 'rgba(102,187,106,0.35)' : 'rgba(46,125,50,0.3)';
+                    ctx.font = '9px Arial';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'top';
-                    ctx.fillText(`+${manualIndex}`, x + 4, y + 3);
+                    ctx.fillText(`+${manualIndex}`, x + 3, y + 2);
                 } else {
                     // Imported from FoE — blue border + number
                     importedIndex++;
@@ -666,19 +663,41 @@ export class Renderer {
         const bldR = (x + width)  * cellSize;
         const bldB = (y + height) * cellSize;
 
+        // Fade gradients — transparent at grid edges, opaque toward the building footprint
+        const vFade = Math.min(0.45, 150 / (gridB - gridT));
+        const vGrad = ctx.createLinearGradient(0, gridT, 0, gridB);
+        vGrad.addColorStop(0,          'rgba(79, 195, 247, 0)');
+        vGrad.addColorStop(vFade,      'rgba(79, 195, 247, 1)');
+        vGrad.addColorStop(1 - vFade,  'rgba(79, 195, 247, 1)');
+        vGrad.addColorStop(1,          'rgba(79, 195, 247, 0)');
+
+        const hFade = Math.min(0.45, 150 / (gridR - gridL));
+        const hGrad = ctx.createLinearGradient(gridL, 0, gridR, 0);
+        hGrad.addColorStop(0,          'rgba(79, 195, 247, 0)');
+        hGrad.addColorStop(hFade,      'rgba(79, 195, 247, 1)');
+        hGrad.addColorStop(1 - hFade,  'rgba(79, 195, 247, 1)');
+        hGrad.addColorStop(1,          'rgba(79, 195, 247, 0)');
+
         // Subtle filled guide strips
-        ctx.fillStyle = 'rgba(79, 195, 247, 0.10)';
+        ctx.save();
+        ctx.globalAlpha = 0.10;
+        ctx.fillStyle = vGrad;
         ctx.fillRect(bldL, gridT, bldR - bldL, gridB - gridT);  // column strip
+        ctx.fillStyle = hGrad;
         ctx.fillRect(gridL, bldT, gridR - gridL, bldB - bldT);  // row strip
+        ctx.restore();
 
         // Dashed guide lines at building footprint edges
         ctx.save();
-        ctx.strokeStyle = 'rgba(79, 195, 247, 0.55)';
+        ctx.globalAlpha = 0.55;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
 
+        ctx.strokeStyle = vGrad;
         ctx.beginPath(); ctx.moveTo(bldL, gridT); ctx.lineTo(bldL, gridB); ctx.stroke(); // left
         ctx.beginPath(); ctx.moveTo(bldR, gridT); ctx.lineTo(bldR, gridB); ctx.stroke(); // right
+
+        ctx.strokeStyle = hGrad;
         ctx.beginPath(); ctx.moveTo(gridL, bldT); ctx.lineTo(gridR, bldT); ctx.stroke(); // top
         ctx.beginPath(); ctx.moveTo(gridL, bldB); ctx.lineTo(gridR, bldB); ctx.stroke(); // bottom
 

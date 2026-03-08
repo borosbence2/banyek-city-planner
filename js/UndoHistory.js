@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 const MAX_HISTORY = 50;
 
 export class UndoHistory {
@@ -26,7 +28,7 @@ export class UndoHistory {
         this._redoStack.push(this._snapshot());
         this._restore(this._undoStack.pop());
         this._updateButtons();
-        this._flashStatus('Undo');
+        this._flashStatus(t('status.undo'));
     }
 
     redo() {
@@ -34,7 +36,7 @@ export class UndoHistory {
         this._undoStack.push(this._snapshot());
         this._restore(this._redoStack.pop());
         this._updateButtons();
-        this._flashStatus('Redo');
+        this._flashStatus(t('status.redo'));
     }
 
     _snapshot() {
@@ -66,10 +68,10 @@ export class UndoHistory {
     _flashStatus(label) {
         const el = document.getElementById('status');
         if (!el) return;
-        el.textContent = `${label} (${this._undoStack.length} left)`;
+        el.textContent = t('status.undoCount', { label, count: this._undoStack.length });
         clearTimeout(this._statusTimer);
         this._statusTimer = setTimeout(() => {
-            el.textContent = 'Mode: Select/Move';
+            el.textContent = t('status.selectMove');
         }, 1500);
     }
 

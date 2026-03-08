@@ -16,6 +16,8 @@
  * Multi-age buildings have entries for every era; fixed-era buildings only their own.
  */
 
+import { t } from './i18n.js';
+
 // ── Era code list (newest last) ────────────────────────────────────────────
 const ERA_CODES = [
     'StoneAge', 'BronzeAge', 'IronAge', 'EarlyMiddleAge', 'HighMiddleAge',
@@ -277,40 +279,34 @@ export class ProductionOverview {
         });
 
         // ── Building counts ────────────────────────────────────────────────
-        const TYPE_LABELS = {
-            residential: 'Residential', production: 'Production', goods: 'Goods',
-            culture: 'Culture', military: 'Military', great: 'Great Buildings',
-            event: 'Events', townhall: 'Town Hall', unknown: 'Other',
-        };
         // Merge canvas + pool counts for display
         const allTypes = new Set([...Object.keys(buildingCounts), ...Object.keys(poolCounts)]);
         const countRows = [...allTypes]
             .sort((a, b) => {
-                const total = t => (buildingCounts[t] || 0) + (poolCounts[t] || 0);
+                const total = tp => (buildingCounts[tp] || 0) + (poolCounts[tp] || 0);
                 return total(b) - total(a);
             })
             .map(type => {
                 const onCanvas = buildingCounts[type] || 0;
                 const inPool   = poolCounts[type]    || 0;
                 const poolNote = inPool > 0 ? ` <span class="prod-pool-note">(+${inPool} pool)</span>` : '';
-                return `<tr><td>${TYPE_LABELS[type] || type}</td><td>${onCanvas}${poolNote}</td></tr>`;
+                return `<tr><td>${t('btype.' + type) || type}</td><td>${onCanvas}${poolNote}</td></tr>`;
             }).join('');
 
         // ── No prod data notice ────────────────────────────────────────────
         const noProdNotice = !hasProdData
-            ? `<div class="prod-notice">⚠️ No production data found in the building database.<br>
-               Run <code>python tools/build_database.py &lt;url&gt;</code> to rebuild it.</div>`
+            ? `<div class="prod-notice">${t('prodModal.noProdData')}</div>`
             : '';
 
         // ── Render resource rows ───────────────────────────────────────────
         const resourceSections = sortedResources.map(resource => {
             const timerMap = groups[resource];
             const rows = TIMERS_ORDERED
-                .filter(t => timerMap[t])
-                .map(t => `
+                .filter(tm => timerMap[tm])
+                .map(tm => `
                     <div class="prod-row">
-                        <span class="prod-timer">${TIMER_LABELS[t] || t}</span>
-                        <span class="prod-value">${this._fmt(timerMap[t])}</span>
+                        <span class="prod-timer">${TIMER_LABELS[tm] || tm}</span>
+                        <span class="prod-value">${this._fmt(timerMap[tm])}</span>
                     </div>`)
                 .join('');
             return `
@@ -352,7 +348,7 @@ export class ProductionOverview {
 
         const militarySection = militaryRows ? `
             <div class="prod-section prod-section-full" style="margin-top:12px;">
-                <div class="prod-section-title">Passive % Boosts</div>
+                <div class="prod-section-title">${t('prodModal.passiveBoosts')}</div>
                 <div class="prod-grid">${militaryRows}</div>
             </div>` : '';
 
@@ -370,46 +366,46 @@ export class ProductionOverview {
 
         const itemsSection = itemRows ? `
             <div class="prod-section prod-section-full" style="margin-top:12px;">
-                <div class="prod-section-title">🧩 Item Drops</div>
+                <div class="prod-section-title">${t('prodModal.itemDrops')}</div>
                 <div class="prod-grid">${itemRows}</div>
             </div>` : '';
 
         return `
             <div class="prod-summary-bar">
-                ${buildingCount} building${buildingCount !== 1 ? 's' : ''} on canvas
-                ${poolCount > 0 ? `· <span class="prod-pool-note">${poolCount} in pool (included in totals)</span>` : ''}
+                ${t('prodModal.onCanvas', { count: buildingCount, s: buildingCount !== 1 ? 's' : '' })}
+                ${poolCount > 0 ? `· ${t('prodModal.inPool', { count: poolCount })}` : ''}
             </div>
             ${noProdNotice}
 
             <div class="prod-sections">
 
                 <div class="prod-section">
-                    <div class="prod-section-title">Population &amp; Happiness</div>
+                    <div class="prod-section-title">${t('prodModal.popHappiness')}</div>
                     <div class="prod-grid">
                         <div class="prod-row">
-                            <span class="prod-label">👥 Population</span>
+                            <span class="prod-label">${t('prodModal.population')}</span>
                             <span class="prod-value">${this._fmt(population)}</span>
                         </div>
                         <div class="prod-row">
-                            <span class="prod-label">😊 Happiness provided</span>
+                            <span class="prod-label">${t('prodModal.happinessProvided')}</span>
                             <span class="prod-value">${this._fmt(happiness)}</span>
                         </div>
                         <div class="prod-row">
-                            <span class="prod-label">😐 Happiness demand</span>
+                            <span class="prod-label">${t('prodModal.happinessDemand')}</span>
                             <span class="prod-value">${this._fmt(demandHappiness)}</span>
                         </div>
                         <div class="prod-row prod-row-total">
-                            <span class="prod-label">⚖️ Balance</span>
+                            <span class="prod-label">${t('prodModal.balance')}</span>
                             <span class="prod-value ${hbClass}">${hbSign}${this._fmt(happinessBalance)}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="prod-section prod-section-counts">
-                    <div class="prod-section-title">Building Counts</div>
+                    <div class="prod-section-title">${t('prodModal.buildingCounts')}</div>
                     <table class="prod-count-table">
-                        <thead><tr><th>Type</th><th>Count</th></tr></thead>
-                        <tbody>${countRows || '<tr><td colspan="2">No buildings placed</td></tr>'}</tbody>
+                        <thead><tr><th>${t('prodModal.colType')}</th><th>${t('prodModal.colCount')}</th></tr></thead>
+                        <tbody>${countRows || `<tr><td colspan="2">${t('prodModal.noBuildings')}</td></tr>`}</tbody>
                     </table>
                 </div>
 
@@ -417,7 +413,7 @@ export class ProductionOverview {
 
             ${sortedResources.length > 0 ? `
             <div class="prod-section prod-section-full" style="margin-top:12px;">
-                <div class="prod-section-title">Production (per building timer option)</div>
+                <div class="prod-section-title">${t('prodModal.production')}</div>
                 <div class="prod-resource-list">
                     ${resourceSections}
                 </div>

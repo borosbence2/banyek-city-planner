@@ -3,6 +3,7 @@ import { track } from './analytics.js';
 import { Utils } from './utils.js';
 import { GB_BONUSES } from '../data/gb_bonuses.js';
 import { FoeImporter } from './FoeImporter.js';
+import { t } from './i18n.js';
 
 export class EventHandler {
     constructor(planner) {
@@ -57,7 +58,7 @@ export class EventHandler {
             const statusEl = document.getElementById('clipboardStatus');
             statusEl.style.display = 'block';
             statusEl.className = 'clipboard-status';
-            statusEl.textContent = '⏳ Reading clipboard…';
+            statusEl.textContent = t('clipboard.reading');
             try {
                 const text = await navigator.clipboard.readText();
                 if (!text) throw new Error('Clipboard is empty.');
@@ -67,12 +68,12 @@ export class EventHandler {
                 this._parsedImportData = data;
                 this._runCityDetection(data);
                 statusEl.className = 'clipboard-status success';
-                statusEl.textContent = '✅ Data read from clipboard successfully.';
+                statusEl.textContent = t('clipboard.success');
                 track('import-clipboard', 'Import: Clipboard paste');
                 document.getElementById('importFoeConfirmBtn').disabled = false;
             } catch (err) {
                 statusEl.className = 'clipboard-status error';
-                statusEl.textContent = `❌ ${err.message}`;
+                statusEl.textContent = t('clipboard.error', { error: err.message });
                 document.getElementById('importFoeConfirmBtn').disabled = true;
             }
         });
@@ -97,7 +98,7 @@ export class EventHandler {
         // Confirm import — collect checked city types and run
         document.getElementById('importFoeConfirmBtn').addEventListener('click', () => {
             const data = this._parsedImportData;
-            if (!data) { alert('Please paste your FoE Helper data first!'); return; }
+            if (!data) { alert(t('alert.noData')); return; }
 
             // Gather checked cities (fall back to active city type if detection area is hidden)
             const detectionArea = document.getElementById('cityDetectionArea');
@@ -107,7 +108,7 @@ export class EventHandler {
             } else {
                 selected = [...document.querySelectorAll('#cityCheckboxes input:checked')]
                     .map(cb => cb.value);
-                if (selected.length === 0) { alert('Please select at least one city to import.'); return; }
+                if (selected.length === 0) { alert(t('alert.selectCity')); return; }
             }
 
             p.importer.importFromFoeHelper(selected, data);
@@ -147,7 +148,7 @@ export class EventHandler {
             reader.onload = (ev) => {
                 let data;
                 try { data = JSON.parse(ev.target.result); }
-                catch { alert('Invalid JSON file.'); return; }
+                catch { alert(t('alert.invalidJson')); return; }
                 const perTile = document.getElementById('efficiencyPerTile').checked;
                 p.importEfficiencyRating(data, perTile);
             };
@@ -365,8 +366,8 @@ export class EventHandler {
                 p.moveToPool(p.draggingBuilding);
                 p.draggingBuilding = null;
                 p.canvas.style.cursor = 'default';
-                p.updateStatus('Building moved to pool');
-                setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
+                p.updateStatus(t('status.movedToPool'));
+                setTimeout(() => p.updateStatus(t('status.selectMove')), 2000);
             }
         });
         window.addEventListener('keydown', (e) => {
@@ -500,7 +501,7 @@ export class EventHandler {
             p._setActiveToolBtn(null);
             p.hideModeBanner();
 
-            p.updateStatus('Mode: Select/Move');
+            p.updateStatus(t('status.selectMove'));
             p.renderer.draw();
         }
         });
@@ -523,7 +524,7 @@ export class EventHandler {
         p.panY = mouseY - (mouseY - p.panY) * (newZoom / p.zoom);
         p.zoom = newZoom;
 
-        p.updateStatus(`Zoom: ${Math.round(p.zoom * 100)}%`);
+        p.updateStatus(t('status.zoom', { pct: Math.round(p.zoom * 100) }));
         p.renderer.draw();
     }
 
@@ -804,15 +805,15 @@ export class EventHandler {
 
             if (offGrid || onLockedArea) {
                 p.moveToPool(b);
-                p.updateStatus('Building moved to pool');
-                setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
+                p.updateStatus(t('status.movedToPool'));
+                setTimeout(() => p.updateStatus(t('status.selectMove')), 2000);
             } else if (!p.canPlaceBuilding(b.x, b.y, b.width, b.height, b)) {
                 // Snapped back — no net change, discard the captured snapshot
                 p.undoHistory.discard();
                 b.x = p.dragStartPos.x;
                 b.y = p.dragStartPos.y;
-                p.updateStatus('Invalid placement — building returned to original position');
-                setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
+                p.updateStatus(t('status.invalidPlacement'));
+                setTimeout(() => p.updateStatus(t('status.selectMove')), 2000);
             } else if (b.x === p.dragStartPos.x && b.y === p.dragStartPos.y) {
                 // Dropped on same cell (just a click) — no net change, discard
                 p.undoHistory.discard();
@@ -951,7 +952,7 @@ export class EventHandler {
             const disabled = found ? '' : 'disabled';
             const cls      = found ? '' : ' class="not-found"';
             const badge    = found ? '✅' : '❌';
-            const note     = isActive && found ? ' <em>(current tab)</em>' : '';
+            const note     = isActive && found ? t('import.currentTab') : '';
             return `<label${cls}>
                 <input type="checkbox" value="${ct.id}" ${checked} ${disabled}>
                 ${badge} ${ct.icon} ${ct.label}${note}
@@ -1013,11 +1014,11 @@ export class EventHandler {
                     const dupEntry = { ...copy, x: gridPos.x, y: gridPos.y };
                     p.buildings.push(dupEntry);
                     p.renderer.triggerPlaceAnimation(dupEntry);
-                    p.updateStatus(`Placed copy of ${copy.name}`);
-                    setTimeout(() => p.updateStatus('Mode: Select/Move'), 1500);
+                    p.updateStatus(t('status.placedCopy', { name: copy.name }));
+                    setTimeout(() => p.updateStatus(t('status.selectMove')), 1500);
                 } else {
-                    p.updateStatus('Cannot place here — duplicate discarded');
-                    setTimeout(() => p.updateStatus('Mode: Select/Move'), 2000);
+                    p.updateStatus(t('status.cannotPlaceDiscard'));
+                    setTimeout(() => p.updateStatus(t('status.selectMove')), 2000);
                 }
             }
             p.renderer.draw();
@@ -1207,7 +1208,7 @@ export class EventHandler {
         if (building.eventName) metaParts.push(building.eventName);
         metaParts.push(building.type || '');
         metaParts.push(`${building.width}×${building.height}`);
-        if (building.expiration != null) metaParts.push('⚡ Felemelkedett');
+        if (building.expiration != null) metaParts.push(t('tooltip.evolved'));
         html += `<div class="tt-meta">${metaParts.join(' · ')}</div>`;
 
         if (building.expiration != null) {
@@ -1224,34 +1225,34 @@ export class EventHandler {
             if (building.expireDuration != null) {
                 const totalDays = Math.round(building.expireDuration / 86400);
                 html += `<div class="tt-stat" style="margin-top:4px;">
-                    <span class="tt-stat-label">⏱ Duration</span>
-                    <span class="tt-stat-value">${totalDays} days total</span>
+                    <span class="tt-stat-label">${t('tooltip.duration')}</span>
+                    <span class="tt-stat-value">${t('tooltip.daysTotal', { days: totalDays })}</span>
                 </div>`;
             }
 
             const expTs = building.expiration;
             html += `<div class="tt-stat">
-                <span class="tt-stat-label">🕐 Transition at</span>
+                <span class="tt-stat-label">${t('tooltip.transitionAt')}</span>
                 <span class="tt-stat-value" style="font-size:9px;color:#aaa;">${expTs} (${expDate})</span>
             </div>`;
 
             if (secsLeft <= 0) {
                 html += `<div class="tt-stat">
-                    <span class="tt-stat-label">⚡ Status</span>
-                    <span class="tt-stat-value" style="color:${actColor};">Inactive</span>
+                    <span class="tt-stat-label">${t('tooltip.status')}</span>
+                    <span class="tt-stat-value" style="color:${actColor};">${t('tooltip.inactive')}</span>
                 </div>`;
             } else {
                 const daysLeft = Math.floor(secsLeft / 86400);
                 const hrsLeft  = Math.floor((secsLeft % 86400) / 3600);
                 const timeStr  = daysLeft > 0 ? `${daysLeft}d ${hrsLeft}h` : `${hrsLeft}h`;
                 html += `<div class="tt-stat">
-                    <span class="tt-stat-label">⚡ Active until</span>
+                    <span class="tt-stat-label">${t('tooltip.activeUntil')}</span>
                     <span class="tt-stat-value" style="color:${actColor};">${expDate} <small>(${timeStr})</small></span>
                 </div>`;
             }
             if (building.revertName) {
                 html += `<div class="tt-stat">
-                    <span class="tt-stat-label">↩ Reverts to</span>
+                    <span class="tt-stat-label">${t('tooltip.revertsTo')}</span>
                     <span class="tt-stat-value" style="color:#888;">${building.revertName}</span>
                 </div>`;
             }
@@ -1272,7 +1273,7 @@ export class EventHandler {
                 all: '', battleground: ' [PvP]',
                 guild_expedition: ' [GE]', guild_raids: ' [GR]',
             };
-            html += `<div class="tt-section">Military Bonuses</div>`;
+            html += `<div class="tt-section">${t('tooltip.militaryBonuses')}</div>`;
             for (const b of building.boosts) {
                 const [icon, label] = BOOST_LABELS[b.type] || ['⚔️', b.type];
                 const feature = FEATURE_LABELS[b.feature] ?? ` [${b.feature}]`;
@@ -1343,8 +1344,8 @@ export class EventHandler {
             return s;
         };
 
-        html += renderStats(baseStats, 'Bonuses');
-        html += renderStats(motivatedStats, 'When motivated');
+        html += renderStats(baseStats, t('tooltip.bonuses'));
+        html += renderStats(motivatedStats, t('tooltip.motivated'));
 
         // Great building level + bonuses
         if (building.type === 'great') {
@@ -1352,9 +1353,9 @@ export class EventHandler {
             const level = building.gbLevel;
 
             if (level !== undefined && level !== null) {
-                html += `<div class="tt-section">Great Building · Level ${level}</div>`;
+                html += `<div class="tt-section">${t('tooltip.gbLevel', { level })}</div>`;
             } else {
-                html += `<div class="tt-section">Great Building Bonuses</div>`;
+                html += `<div class="tt-section">${t('tooltip.gbBonuses')}</div>`;
             }
 
             if (gbData && level) {
@@ -1370,7 +1371,7 @@ export class EventHandler {
                     </div>`;
                 }
                 if (aboveCap) {
-                    html += `<div class="tt-gb-note">Bonus data only available up to level 80</div>`;
+                    html += `<div class="tt-gb-note">${t('tooltip.gbCapNote')}</div>`;
                 }
             } else if (gbData) {
                 // No level known — show level 1 and 10 as reference
