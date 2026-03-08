@@ -1970,7 +1970,7 @@ export class CityPlanner {
             </div>
 
             <div class="help-about">${t('helpModal.about')}</div>
-            <div class="help-about">${t('helpModal.forras')}</div>
+            <div class="help-forras">${t('helpModal.forras')}</div>
         `;
     }
 
