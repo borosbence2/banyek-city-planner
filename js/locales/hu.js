@@ -208,7 +208,7 @@ export const HU = {
     'helpModal.optimizerTitle': '⚡ Optimalizáló',
     'helpModal.optimizerHint1': 'Automatikusan átrendezi az épületeket a legoptimálisabb úthálózati kapcsolat érdekében.',
     'helpModal.optimizerHint2': 'Használd az <strong>Optimalizálás visszavonása</strong> funkciót, ha nem tetszik az eredmény.',
-    'helpModal.tabsTitle':      '🗺️ Lapok',
+    'helpModal.tabsTitle':      '🗺️ Városok',
     'helpModal.tabMain':        '<strong>Város</strong> — az alap FoE városod.',
     'helpModal.tabSettlement':  '<strong>Kultúrális település</strong> — kulturális település (válaszd ki a típust az oldalsávban).',
     'helpModal.tabColony':      '<strong>Kolónia</strong> — Űr kolónia (válaszd ki a típust az oldalsávban).',
