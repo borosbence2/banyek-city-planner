@@ -316,31 +316,82 @@ export class ProductionOverview {
             att_def_boost_attacker:          ['⚔️🛡️', 'Att+Def (Attacker)'],
             att_def_boost_defender:          ['⚔️🛡️', 'Att+Def (Defender)'],
             att_def_boost_attacker_defender: ['⚔️🛡️', 'Att+Def (Both)'],
-            coin_boost:                      ['🪙',   'Coin Production Boost'],
-            supply_boost:                    ['⚙️',   'Supply Production Boost'],
+            coin_boost:                      ['🪙',   'Coin Production'],
+            supply_boost:                    ['⚙️',   'Supply Production'],
         };
+        const PRODUCTION_BOOST_TYPES = new Set(['coin_boost', 'supply_boost']);
+        const FEATURE_ORDER = ['all', 'battleground', 'guild_expedition', 'guild_raids'];
         const FEATURE_LABELS = {
-            all: '', battleground: ' [GBG]',
-            guild_expedition: ' [GE]', guild_raids: ' [GR]',
+            all:              'General',
+            battleground:     'Guild Battlegrounds',
+            guild_expedition: 'Guild Expedition',
+            guild_raids:      'Guild Raids',
         };
-        const militarySums = this._calculateMilitary();
-        const militaryRows = Object.entries(militarySums)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, val]) => {
-                const [type, feature] = key.split('|');
-                const [icon, label] = BOOST_LABELS[type] || ['⚡', type.replace(/_/g, ' ')];
-                const feat = FEATURE_LABELS[feature] ?? ` [${feature}]`;
-                const valStr = Number.isInteger(val) ? val : val.toFixed(1);
-                return `<div class="prod-row">
-                    <span class="prod-label">${icon} ${label}${feat}</span>
-                    <span class="prod-value">+${valStr}%</span>
+        const TYPE_ORDER = [
+            'att_boost_attacker', 'att_boost_defender',
+            'def_boost_attacker', 'def_boost_defender',
+            'att_def_boost_attacker', 'att_def_boost_defender',
+            'att_def_boost_attacker_defender',
+            'coin_boost', 'supply_boost',
+        ];
+
+        const allSums = this._calculateMilitary();
+
+        // Separate military vs production boosts, group military by feature
+        const byFeature = {};   // { feature: { type: val } }
+        const prodBoosts = {};  // { type: val }
+        for (const [key, val] of Object.entries(allSums)) {
+            const [type, feature] = key.split('|');
+            if (PRODUCTION_BOOST_TYPES.has(type)) {
+                prodBoosts[type] = (prodBoosts[type] || 0) + val;
+            } else {
+                if (!byFeature[feature]) byFeature[feature] = {};
+                byFeature[feature][type] = val;
+            }
+        }
+
+        const sortTypes = obj => Object.entries(obj).sort(([a], [b]) => {
+            const ia = TYPE_ORDER.indexOf(a), ib = TYPE_ORDER.indexOf(b);
+            if (ia !== -1 && ib !== -1) return ia - ib;
+            return a.localeCompare(b);
+        });
+
+        // Render military sub-sections grouped by feature
+        const militaryHtml = FEATURE_ORDER
+            .filter(f => byFeature[f])
+            .map(f => {
+                const rows = sortTypes(byFeature[f]).map(([type, val]) => {
+                    const [icon, label] = BOOST_LABELS[type] || ['⚡', type.replace(/_/g, ' ')];
+                    const valStr = Number.isInteger(val) ? val : val.toFixed(1);
+                    return `<div class="prod-row">
+                        <span class="prod-label">${icon} ${label}</span>
+                        <span class="prod-value">+${valStr}%</span>
+                    </div>`;
+                }).join('');
+                return `<div class="prod-boost-group">
+                    <div class="prod-boost-group-title">${FEATURE_LABELS[f]}</div>
+                    ${rows}
                 </div>`;
             }).join('');
 
-        const militarySection = militaryRows ? `
+        // Render production boosts
+        const prodBoostHtml = sortTypes(prodBoosts).map(([type, val]) => {
+            const [icon, label] = BOOST_LABELS[type] || ['⚡', type.replace(/_/g, ' ')];
+            const valStr = Number.isInteger(val) ? val : val.toFixed(1);
+            return `<div class="prod-row">
+                <span class="prod-label">${icon} ${label}</span>
+                <span class="prod-value">+${valStr}%</span>
+            </div>`;
+        }).join('');
+
+        const militarySection = (militaryHtml || prodBoostHtml) ? `
             <div class="prod-section prod-section-full" style="margin-top:12px;">
                 <div class="prod-section-title">${t('prodModal.passiveBoosts')}</div>
-                <div class="prod-grid">${militaryRows}</div>
+                ${militaryHtml ? `<div class="prod-boost-groups">${militaryHtml}</div>` : ''}
+                ${prodBoostHtml ? `<div class="prod-boost-group" style="margin-top:8px;">
+                    <div class="prod-boost-group-title">Production</div>
+                    <div>${prodBoostHtml}</div>
+                </div>` : ''}
             </div>` : '';
 
         // ── Fragment items ─────────────────────────────────────────────────
