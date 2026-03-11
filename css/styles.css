@@ -163,8 +163,17 @@ body {
 }
 
 .lang-opt-flag {
-    font-size: 16px;
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
     line-height: 1;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #e8eaf0;
+    color: #555;
+    letter-spacing: 0.03em;
+    min-width: 24px;
+    text-align: center;
 }
 
 /* ── Collapsible sections ─────────────────────────────────────────────────── */
@@ -1850,6 +1859,11 @@ body.dark .lang-trigger {
 body.dark .lang-trigger:hover {
     background: #2a2a40;
     border-color: #5a5a78;
+}
+
+body.dark .lang-opt-flag {
+    background: #2e2e48;
+    color: #a0a0c0;
 }
 
 body.dark .lang-menu {
