@@ -1,7 +1,10 @@
 import { EN } from './locales/en.js';
 import { HU } from './locales/hu.js';
+import { DE } from './locales/de.js';
+import { FR } from './locales/fr.js';
+import { ES } from './locales/es.js';
 
-const LOCALES = { en: EN, hu: HU };
+const LOCALES = { en: EN, hu: HU, de: DE, fr: FR, es: ES };
 
 // ── Detect initial language ──────────────────────────────────────────────
 const saved   = localStorage.getItem('foe_lang');
@@ -64,8 +67,11 @@ export function applyDOM(root = document) {
 // ── Language picker ───────────────────────────────────────────────────────
 
 const LANG_META = {
-    en: { flag: '🇬🇧', label: 'English' },
-    hu: { flag: '🇭🇺', label: 'Magyar'  },
+    en: { flag: 'EN', label: 'English'  },
+    hu: { flag: 'HU', label: 'Magyar'   },
+    de: { flag: 'DE', label: 'Deutsch'  },
+    fr: { flag: 'FR', label: 'Français' },
+    es: { flag: 'ES', label: 'Español'  },
 };
 
 /**
