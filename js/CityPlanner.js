@@ -1025,18 +1025,24 @@ export class CityPlanner {
         }
 
         // ── No search: collapsible era groups ─────────────────────────────
-        const groups = new Map(ERA_ORDER.map(era => [era, []]));
+        // Separate custom ages (not in ERA_ORDER) from standard ones
+        const customGroups = new Map();
+        const standardGroups = new Map(ERA_ORDER.map(era => [era, []]));
         filtered.forEach(entry => {
             const age = entry[1].age || 'All Ages';
-            if (!groups.has(age)) groups.set(age, []);
-            groups.get(age).push(entry);
+            if (standardGroups.has(age)) {
+                standardGroups.get(age).push(entry);
+            } else {
+                if (!customGroups.has(age)) customGroups.set(age, []);
+                customGroups.get(age).push(entry);
+            }
         });
-        groups.forEach(list => list.sort((a, b) => a[1].name.localeCompare(b[1].name)));
+        [...customGroups.values(), ...standardGroups.values()]
+            .forEach(list => list.sort((a, b) => a[1].name.localeCompare(b[1].name)));
 
-        groups.forEach((list, era) => {
+        const renderEraGroup = (list, era) => {
             if (list.length === 0) return;
             const expanded = this.expandedEras.has(era);
-
             const header = document.createElement('div');
             header.className = 'age-group-header' + (expanded ? ' expanded' : '');
             header.innerHTML =
@@ -1048,11 +1054,14 @@ export class CityPlanner {
                 this.updateBuildingList();
             });
             container.appendChild(header);
-
             if (expanded) {
                 list.forEach(([id, building]) => container.appendChild(this._buildingBtn(id, building)));
             }
-        });
+        };
+
+        // Custom categories first, then era-ordered
+        customGroups.forEach(renderEraGroup);
+        standardGroups.forEach(renderEraGroup);
     }
 
     _buildingBtn(id, building) {
@@ -1103,18 +1112,36 @@ export class CityPlanner {
     handleAddBuilding(e) {
         e.preventDefault();
         const fd = new FormData(e.target);
+        const age = fd.get('age') || 'Custom';
         const id = 'custom_' + Date.now();
         this.buildingTemplates[id] = {
             name:   fd.get('name'),
             width:  parseInt(fd.get('width')),
             height: parseInt(fd.get('height')),
-            age:    fd.get('age') || 'Custom',
+            age,
             type:   fd.get('type'),
             color:  fd.get('color'),
         };
+
+        // Expand the era group so the new building is immediately visible
+        this.expandedEras.add(age);
         this.updateBuildingList();
+
+        // Expand the Buildings sub-section if it's collapsed
+        const listContent = document.getElementById('buildingListContent');
+        if (listContent && listContent.classList.contains('collapsed')) {
+            listContent.classList.remove('collapsed');
+            listContent.style.maxHeight = '';
+            const listHeader = listContent.previousElementSibling;
+            if (listHeader) listHeader.classList.remove('collapsed');
+        }
+
         this.hideModal('addBuildingModal');
         e.target.reset();
+
+        // Enter placement mode so the user can instantly place the new building
+        this.enterBuildingPlacement({ ...this.buildingTemplates[id], id });
+        this.renderer.draw();
     }
 
     // ========================================
