@@ -287,15 +287,9 @@ body {
 /* ── Production overview button (promoted) ──────────────────────────────── */
 
 .prod-btn {
-    background: linear-gradient(135deg, #7986cb, #3949ab) !important;
     margin-bottom: 10px;
     text-align: center;
     justify-content: center;
-}
-
-.prod-btn:hover {
-    background: linear-gradient(135deg, #6976bb, #29399b) !important;
-    box-shadow: 0 4px 12px rgba(57, 73, 171, 0.4) !important;
 }
 
 /* ── Import group — always visible ───────────────────────────────────────── */
@@ -1182,6 +1176,30 @@ body.dark .help-forras { color: #484868; }
 .prod-negative { color: #dc3545; }
 .prod-pool-note { color: #888; font-size: 0.85em; }
 
+.prod-boost-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.prod-boost-group {
+    background: #fff;
+    border: 1px solid #e8ecf0;
+    border-radius: 5px;
+    padding: 7px 10px;
+}
+
+.prod-boost-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin-bottom: 5px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eef0f3;
+}
+
 /* Efficiency Rating import */
 .efficiency-pertile-label {
     display: flex;
@@ -1975,14 +1993,6 @@ body.dark .efficiency-tile-check {
     color: #8080a8;
 }
 
-body.dark .prod-btn {
-    background: linear-gradient(135deg, #4a5ac0, #2939a0) !important;
-}
-
-body.dark .prod-btn:hover {
-    background: linear-gradient(135deg, #3a4ab0, #192990) !important;
-    box-shadow: 0 4px 12px rgba(57, 73, 171, 0.5) !important;
-}
 
 body.dark .legend-toggle {
     color: #7070a0 !important;
@@ -2196,6 +2206,16 @@ body.dark .prod-label {
 
 body.dark .prod-value {
     color: #e0e0f0;
+}
+
+body.dark .prod-boost-group {
+    background: #1e1e2e;
+    border-color: #3a3a52;
+}
+
+body.dark .prod-boost-group-title {
+    color: #7070a0;
+    border-bottom-color: #3a3a52;
 }
 
 body.dark .prod-notice {
