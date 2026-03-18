@@ -390,42 +390,56 @@ export class FoeImporter {
         const cityInfoEl   = document.getElementById('cityInfo');
         const cityInfoText = document.getElementById('cityInfoText');
 
-        if (!p.cityMetadata) {
+        // Hide panel when there's nothing to show
+        if (!p.cityMetadata && p.buildings.length <= 1 && p.roads.size === 0) {
             cityInfoEl.style.display = 'none';
             return;
         }
 
-        let html = `<strong>${t('cityInfo.imported')}</strong><br>`;
-        html += `${t('cityInfo.buildings', { buildings: p.buildings.length, roads: p.roads.size })}<br>`;
-        html += `<small>${t('cityInfo.importedAt', { date: p.cityMetadata.importedAt })}</small>`;
+        let html = '';
 
-        if (p.cityMetadata.greatBuildings?.length > 0) {
-            html += `<div style="margin-top:15px;border-top:1px solid #ddd;padding-top:10px;">`;
-            html += `<strong>${t('cityInfo.greatBuildings', { count: p.cityMetadata.greatBuildings.length })}</strong><br>`;
-            html += `<div style="font-size:11px;max-height:200px;overflow-y:auto;">`;
+        // Import-specific info
+        if (p.cityMetadata) {
+            html += `<strong>${t('cityInfo.imported')}</strong><br>`;
+            html += `<small>${t('cityInfo.importedAt', { date: p.cityMetadata.importedAt })}</small><br>`;
 
-            p.cityMetadata.greatBuildings.sort((a, b) => a.name.localeCompare(b.name));
-            p.cityMetadata.greatBuildings.forEach(gb => {
-                const progress  = (gb.level / gb.maxLevel * 100).toFixed(0);
-                const barColor  = progress == 100 ? '#4CAF50' : '#2196F3';
-                html += `<div style="margin:8px 0;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                        <span style="font-weight:500;">${gb.name}</span>
-                        <span style="color:#666;">${t('cityInfo.level', { current: gb.level, max: gb.maxLevel })}</span>
-                    </div>
-                    <div style="background:#e0e0e0;height:6px;border-radius:3px;overflow:hidden;">
-                        <div style="background:${barColor};width:${progress}%;height:100%;"></div>
-                    </div>
-                </div>`;
-            });
-            html += `</div></div>`;
+            if (p.cityMetadata.greatBuildings?.length > 0) {
+                html += `<div style="margin-top:15px;border-top:1px solid #ddd;padding-top:10px;">`;
+                html += `<strong>${t('cityInfo.greatBuildings', { count: p.cityMetadata.greatBuildings.length })}</strong><br>`;
+                html += `<div style="font-size:11px;max-height:200px;overflow-y:auto;">`;
+
+                p.cityMetadata.greatBuildings.sort((a, b) => a.name.localeCompare(b.name));
+                p.cityMetadata.greatBuildings.forEach(gb => {
+                    const progress  = (gb.level / gb.maxLevel * 100).toFixed(0);
+                    const barColor  = progress == 100 ? '#4CAF50' : '#2196F3';
+                    html += `<div style="margin:8px 0;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+                            <span style="font-weight:500;">${gb.name}</span>
+                            <span style="color:#666;">${t('cityInfo.level', { current: gb.level, max: gb.maxLevel })}</span>
+                        </div>
+                        <div style="background:#e0e0e0;height:6px;border-radius:3px;overflow:hidden;">
+                            <div style="background:${barColor};width:${progress}%;height:100%;"></div>
+                        </div>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            }
         }
 
-        const eff = p.cityMetadata.streetEfficiency;
-        if (eff) {
-            const pct      = eff.efficiency.toFixed(1);
-            const effColor = eff.efficiency < 80 ? '#FF9800' : eff.efficiency > 110 ? '#2196F3' : '#4CAF50';
-            const effText  = eff.efficiency < 80 ? t('cityInfo.tooManyRoads') : eff.efficiency > 110 ? t('cityInfo.veryEfficient') : t('cityInfo.excellent');
+        // Always-visible stats: building/road counts + street efficiency
+        html += `${t('cityInfo.buildings', { buildings: p.buildings.length, roads: p.roads.size })}<br>`;
+
+        let streetsNeeded = 0;
+        p.buildings.forEach(b => {
+            if (b.needsRoad) streetsNeeded += Math.min(b.width, b.height) / 2;
+        });
+        const streetsUsed = p.roads.size;
+        const efficiency  = streetsUsed > 0 ? (streetsNeeded / streetsUsed * 100) : 0;
+
+        if (streetsUsed > 0) {
+            const pct      = efficiency.toFixed(1);
+            const effColor = efficiency < 80 ? '#FF9800' : efficiency > 110 ? '#2196F3' : '#4CAF50';
+            const effText  = efficiency < 80 ? t('cityInfo.tooManyRoads') : efficiency > 110 ? t('cityInfo.veryEfficient') : t('cityInfo.excellent');
 
             html += `<div style="margin-top:15px;border-top:1px solid #ddd;padding-top:10px;">
                 <strong>${t('cityInfo.streetEfficiency')}</strong>
@@ -434,10 +448,10 @@ export class FoeImporter {
                         <span>${t('cityInfo.efficiency')}</span><span style="color:${effColor};font-weight:bold;">${pct}%</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin:3px 0;">
-                        <span>${t('cityInfo.streetsNeeded')}</span><span>${eff.needed.toFixed(1)}</span>
+                        <span>${t('cityInfo.streetsNeeded')}</span><span>${streetsNeeded.toFixed(1)}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin:3px 0;">
-                        <span>${t('cityInfo.streetsUsed')}</span><span>${eff.used}</span>
+                        <span>${t('cityInfo.streetsUsed')}</span><span>${streetsUsed}</span>
                     </div>
                     <div style="margin-top:5px;padding:5px;background:#f5f5f5;border-radius:3px;font-size:10px;">
                         <strong style="color:${effColor};">${effText}</strong>

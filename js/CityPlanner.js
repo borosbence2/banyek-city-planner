@@ -163,6 +163,7 @@ export class CityPlanner {
             this.roads.delete(`${x},${y}`);
         }
         this.renderer.draw();
+        this.importer.updateCityInfoPanel();
     }
 
     enterWideRoadPlacement() {
@@ -210,6 +211,7 @@ export class CityPlanner {
             for (let dx = 0; dx < 2; dx++)
                 this.roads.add(`${x + dx},${y + dy}`);
         this.renderer.draw();
+        this.importer.updateCityInfoPanel();
     }
 
     /**
@@ -247,6 +249,7 @@ export class CityPlanner {
             this.selectedRoad = null;
         }
         this.renderer.draw();
+        this.importer.updateCityInfoPanel();
     }
 
     enterBuildingPlacement(template) {
@@ -430,6 +433,7 @@ export class CityPlanner {
             }
 
             this.renderer.draw();
+            this.importer.updateCityInfoPanel();
         }
     }
 
@@ -439,6 +443,7 @@ export class CityPlanner {
         if (this.isCellUnlocked(x, y) && !this.isBuildingAt(x, y)) {
             this.roads.add(`${x},${y}`);
             this.renderer.draw();
+            this.importer.updateCityInfoPanel();
         }
     }
 
@@ -546,6 +551,7 @@ export class CityPlanner {
         this.updateSelectionBanner();
         this.updatePoolPanel();
         this.renderer.draw();
+        this.importer.updateCityInfoPanel();
     }
 
     updatePoolPanel() {
@@ -711,6 +717,7 @@ export class CityPlanner {
                     this.updatePoolPanel();
                     this.updateStatus(t('status.placed', { name: building.name }));
                     setTimeout(() => this.updateStatus(t('status.selectMove')), 1500);
+                    this.importer.updateCityInfoPanel();
                 } else {
                     this.updateStatus(t('status.cannotPlace'));
                     setTimeout(() => this.updateStatus(t('status.selectMove')), 2000);
@@ -2220,7 +2227,7 @@ export class CityPlanner {
         this.wideRoads   = new Set();
         this.buildingPool = [];
         this.cityMetadata = null;
-        document.getElementById('cityInfo').style.display     = 'none';
+        this.importer.updateCityInfoPanel();
         document.getElementById('undoOptimizeBtn').style.display = 'none';
         this.optimizer._snapshot = null;
         this.updatePoolPanel();
@@ -2274,11 +2281,7 @@ export class CityPlanner {
         this.centreView();
         this.updateBuildingList();
         this.updatePoolPanel();
-        if (this.cityMetadata) {
-            this.importer.updateCityInfoPanel();
-        } else {
-            document.getElementById('cityInfo').style.display = 'none';
-        }
+        this.importer.updateCityInfoPanel();
         this.renderer.draw();
     }
 

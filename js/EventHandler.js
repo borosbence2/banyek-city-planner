@@ -219,6 +219,7 @@ export class EventHandler {
                         p.updateSelectionBanner();
                     }
                     p.renderer.draw();
+                    p.importer.updateCityInfoPanel();
                 }
             }
             this._hideContextMenu();
@@ -449,6 +450,7 @@ export class EventHandler {
                 } else {
                     p.buildings = p.buildings.filter(b => b !== p.selectedBuilding);
                     p.selectedBuilding = null;
+                    p.importer.updateCityInfoPanel();
                 }
             }
 
