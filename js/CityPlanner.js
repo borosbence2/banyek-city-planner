@@ -1465,7 +1465,7 @@ export class CityPlanner {
         for (const b of this.buildings) {
             const bx = b.x * cellPx, by = b.y * cellPx;
             const bw = b.width * cellPx, bh = b.height * cellPx;
-            octx.fillStyle = b.color || '#aaa';
+            octx.fillStyle = (b.needsRoad === 0) ? CONSTANTS.COLORS.ROADLESS : (b.color || '#aaa');
             octx.fillRect(bx, by, bw, bh);
             octx.strokeStyle = 'rgba(0,0,0,0.4)';
             octx.lineWidth = 1;
@@ -1527,6 +1527,8 @@ export class CityPlanner {
         track('export-pdf', 'Export PDF');
         const { jsPDF } = window.jspdf;
         if (!jsPDF) { alert(t('alert.pdfNotLoaded')); return; }
+
+        const pdfSafe = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
         const CITY_LABELS = {
             main: 'Main City', settlement: 'Cultural Settlement',
@@ -1590,14 +1592,14 @@ export class CityPlanner {
         // Count duplicates
         const counts = {};
         for (const b of this.buildings) {
-            const key = `${b.id}||${b.name}||${b.width}x${b.height}||${b.color || '#aaa'}`;
+            const key = `${b.id}||${b.name}||${b.width}x${b.height}||${b.color || '#aaa'}||${b.needsRoad || 0}`;
             counts[key] = (counts[key] || 0) + 1;
         }
 
         // Sort: type then name
         const TYPE_ORDER = ['townhall', 'main_building', 'residential', 'production', 'goods', 'culture', 'military', 'great_building', 'event', 'impediment'];
         const rows = Object.entries(counts)
-            .map(([key, qty]) => { const [id, name, size, color] = key.split('||'); return { id, name, size, color, qty }; })
+            .map(([key, qty]) => { const [id, name, size, color, road] = key.split('||'); return { id, name, size, color: parseInt(road) === 0 ? CONSTANTS.COLORS.ROADLESS : color, qty }; })
             .sort((a, b) => {
                 const ta = TYPE_ORDER.indexOf(this.buildings.find(x => x.id === a.id)?.type || '') ?? 99;
                 const tb = TYPE_ORDER.indexOf(this.buildings.find(x => x.id === b.id)?.type || '') ?? 99;
@@ -1621,7 +1623,8 @@ export class CityPlanner {
             // Name (searchable text)
             doc.setTextColor(0, 0, 0);
             const maxChars = Math.floor(COL_NAME / 1.7);
-            const label = row.name.length > maxChars ? row.name.slice(0, maxChars - 1) + '…' : row.name;
+            const safeName = pdfSafe(row.name);
+            const label = safeName.length > maxChars ? safeName.slice(0, maxChars - 1) + '…' : safeName;
             doc.text(label, TABLE_X + COL_COLOR + 1, ty + 3.5);
 
             // Size
@@ -1683,7 +1686,7 @@ export class CityPlanner {
         const TYPE_LABELS_PDF = {
             residential: 'Residential', production: 'Production', goods: 'Goods',
             culture: 'Culture', military: 'Military', great: 'Great Buildings',
-            event: 'Events', townhall: 'Town Hall', main_building: 'Town Hall',
+            event: 'Events', roadless: 'Roadless', townhall: 'Town Hall', main_building: 'Town Hall',
             impediment: 'Impediment', unknown: 'Other',
         };
         const countEntries = Object.entries(buildingCounts).sort((a, b) => b[1] - a[1]);
@@ -1738,7 +1741,7 @@ export class CityPlanner {
             guild_raids_limestone:'Limestone', guild_raids_cloth:'Cloth',
             guild_raids_gunpowder:'Gunpowder', guild_raids_actions:'QI Actions',
         };
-        const resLabel = r => RESOURCE_LABELS_PDF[r] || r.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+        const resLabel = r => pdfSafe(RESOURCE_LABELS_PDF[r] || r.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()));
 
         const sortedRes = Object.keys(groups).sort((a, b) => {
             const ORDER = ['money','supplies','strategy_points','medals','premium','goods','clan_goods','diplomacy_currency'];
@@ -1916,6 +1919,7 @@ export class CityPlanner {
                 ${swatch(C.GREAT_BUILDING, t('legend.great'))}
                 ${swatch(C.TOWN_HALL,      t('legend.townhall'))}
                 ${swatch(C.EVENT,          t('legend.events'))}
+                ${swatch(C.ROADLESS,       t('legend.roadless'))}
                 ${swatch(C.ROAD,           t('legend.roads'))}
                 ${swatch(C.WIDE_ROAD,      t('legend.wideRoads'))}
                 ${note(t('legend.normalNote'))}

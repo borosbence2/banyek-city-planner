@@ -244,6 +244,7 @@ export const ES = {
     'legend.great':          'Grandes edificios 🏛️',
     'legend.townhall':       'Ayuntamiento 🏛️',
     'legend.events':         'Edificios de evento ✨',
+    'legend.roadless':       'Edificios sin carretera 🌿',
     'legend.roads':          'Carreteras 🛣️',
     'legend.wideRoads':      'Carreteras anchas (2×2) 🛤️',
     'legend.normalNote':     '💡 Los colores coinciden con el Ayudante de FoE\n✨ Los <strong>edificios sin carretera</strong> tienen rayas diagonales + borde verde.',

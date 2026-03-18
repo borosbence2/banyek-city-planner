@@ -244,6 +244,7 @@ export const EN = {
     'legend.great':          'Great Buildings 🏛️',
     'legend.townhall':       'Town Hall 🏛️',
     'legend.events':         'Event Buildings ✨',
+    'legend.roadless':       'Roadless Buildings 🌿',
     'legend.roads':          'Roads 🛣️',
     'legend.wideRoads':      'Wide Roads (2×2) 🛤️',
     'legend.normalNote':     '💡 Colors match FoE Helper\n✨ <strong>Roadless buildings</strong> have diagonal stripes + green border.',

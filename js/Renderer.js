@@ -507,6 +507,8 @@ export class Renderer {
                 } else {
                     fillColor = '#E53935'; // disconnected
                 }
+            } else if (isRoadless) {
+                fillColor = this.isDark ? CONSTANTS.DARK_COLORS.roadless : CONSTANTS.COLORS.ROADLESS;
             } else {
                 fillColor = this.isDark ? (CONSTANTS.DARK_COLORS[building.type] || building.color) : building.color;
             }

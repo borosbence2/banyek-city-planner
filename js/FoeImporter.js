@@ -353,7 +353,7 @@ export class FoeImporter {
     getBuildingTypeAndColor(type, needsRoad) {
         const t = type.toLowerCase();
 
-        if (needsRoad === 0) return { buildingType: 'roadless',   color: CONSTANTS.COLORS.CULTURE };
+        if (needsRoad === 0) return { buildingType: 'roadless',   color: CONSTANTS.COLORS.ROADLESS };
         if (t.includes('residential') || t.includes('house')) return { buildingType: 'residential', color: CONSTANTS.COLORS.RESIDENTIAL };
         if (t.includes('production'))  return { buildingType: 'production',  color: CONSTANTS.COLORS.PRODUCTION };
         if (t.includes('goods'))       return { buildingType: 'goods',       color: CONSTANTS.COLORS.GOODS };

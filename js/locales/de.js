@@ -244,6 +244,7 @@ export const DE = {
     'legend.great':          'Legendäre Bauwerke 🏛️',
     'legend.townhall':       'Rathaus 🏛️',
     'legend.events':         'Event-Gebäude ✨',
+    'legend.roadless':       'Straßenunabhängige Gebäude 🌿',
     'legend.roads':          'Straßen 🛣️',
     'legend.wideRoads':      'Breite Straßen (2×2) 🛤️',
     'legend.normalNote':     '💡 Farben entsprechen dem FoE Helfer\n✨ <strong>Straßenunabhängige Gebäude</strong> haben diagonale Streifen + grünen Rahmen.',

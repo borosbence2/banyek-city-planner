@@ -244,6 +244,7 @@ export const HU = {
     'legend.great':          'Nevezetes épületek 🏛️',
     'legend.townhall':       'Városháza 🏛️',
     'legend.events':         'Event épületek ✨',
+    'legend.roadless':       'Útfüggetlen épületek 🌿',
     'legend.roads':          'Utak 🛣️',
     'legend.wideRoads':      'Széles utak (2×2) 🛤️',
     'legend.normalNote':     '💡 A színek megfelelnek az FoE Helper színeinek\n✨ Az <strong>útfüggetlen épületeknek</strong> átlós csíkjaik + zöld keretük van.',

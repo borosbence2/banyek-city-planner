@@ -63,7 +63,7 @@ export const CONSTANTS = {
         EVENT:          '#D4884B',
         ROAD:           '#808080',
         WIDE_ROAD:      '#6b6b6b',
-        ROADLESS:       '#6B8E7F',
+        ROADLESS:       '#66B2A8',
     },
 
     // Dark-mode building color palette (vivid but not harsh on dark canvas)
@@ -76,6 +76,7 @@ export const CONSTANTS = {
         great:          '#F4511E',
         townhall:       '#FFB300',
         event:          '#FB8C00',
+        roadless:       '#4DB6AC',
     },
 
     // Optimizer settings

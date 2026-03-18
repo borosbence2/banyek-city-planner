@@ -244,6 +244,7 @@ export const FR = {
     'legend.great':          'Grands Monuments 🏛️',
     'legend.townhall':       'Hôtel de ville 🏛️',
     'legend.events':         'Bâtiments d\'événement ✨',
+    'legend.roadless':       'Bâtiments sans route 🌿',
     'legend.roads':          'Routes 🛣️',
     'legend.wideRoads':      'Routes larges (2×2) 🛤️',
     'legend.normalNote':     '💡 Les couleurs correspondent à FoE Helper\n✨ Les <strong>bâtiments sans route</strong> ont des rayures diagonales + bordure verte.',

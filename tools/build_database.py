@@ -52,7 +52,8 @@ TYPE_MAP = {
     '':                          ('culture',     '#6B8E7F'),
 }
 
-EVENT_COLOR = '#D4884B'
+EVENT_COLOR    = '#D4884B'
+ROADLESS_COLOR = '#66B2A8'
 
 # Prefix → event name mapping for W_MultiAge_<CODE><number> buildings.
 # Sorted longest-first so longer prefixes match before shorter ones.
@@ -490,6 +491,10 @@ def convert(data):
                 needs_road = entity['components']['AllAge']['streetConnectionRequirement']['requiredLevel']
             except (KeyError, TypeError):
                 pass
+
+        # Roadless buildings get a distinct color
+        if not needs_road:
+            color = ROADLESS_COLOR
 
         prod_stats  = get_production_stats(entity)
         boost_stats = get_boosts(entity)
