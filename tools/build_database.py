@@ -484,6 +484,12 @@ def convert(data):
             age     = ERA_MAP.get(min_era, 'All Ages')
 
         needs_road = req.get('street_connection_level', 0)
+        # GenericCityEntity (event buildings) store road requirement in components
+        if not needs_road:
+            try:
+                needs_road = entity['components']['AllAge']['streetConnectionRequirement']['requiredLevel']
+            except (KeyError, TypeError):
+                pass
 
         prod_stats  = get_production_stats(entity)
         boost_stats = get_boosts(entity)
@@ -579,6 +585,11 @@ def convert_qi(data):
 
         req = entity.get('requirements', {}) or {}
         needs_road = req.get('street_connection_level', 0)
+        if not needs_road:
+            try:
+                needs_road = entity['components']['AllAge']['streetConnectionRequirement']['requiredLevel']
+            except (KeyError, TypeError):
+                pass
 
         prod_stats  = get_production_stats(entity)
         boost_stats = get_boosts(entity)

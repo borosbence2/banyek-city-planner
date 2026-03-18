@@ -62,6 +62,7 @@ export class UndoHistory {
         p.rebuildUnlockedCells();
         p.updatePoolPanel();
         p.updateSelectionBanner();
+        p.importer.updateCityInfoPanel();
         p.renderer.draw();
     }
 
