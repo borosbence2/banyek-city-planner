@@ -78,6 +78,8 @@ export const FR = {
     'pool.header': 'Stock de bâtiments',
     'pool.hint':   'Faites glisser les bâtiments hors de la grille pour les stocker ici. Cliquez pour replacer.',
     'pool.empty':  'Aucun bâtiment ici pour l\'instant.\nFaites glisser un bâtiment hors de la grille.',
+    'pool.needsRoad': 'Route requise',
+    'pool.noRoad':    'Sans route',
 
     // ── Context menus ─────────────────────────────────────────────────────
     'ctx.duplicate':        '⧉ Dupliquer & déplacer',

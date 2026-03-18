@@ -574,14 +574,33 @@ export class CityPlanner {
             groups.get(key).push({ building, idx });
         });
 
-        const sortedGroups = [...groups.values()].sort((a, b) => {
+        const sortByArea = (a, b) => {
             const areaA = a[0].building.width * a[0].building.height;
             const areaB = b[0].building.width * b[0].building.height;
             if (areaB !== areaA) return areaB - areaA;
             return a[0].building.name.localeCompare(b[0].building.name);
-        });
+        };
 
-        sortedGroups.forEach((entries) => {
+        const roadGroups = [];
+        const noRoadGroups = [];
+        for (const entries of groups.values()) {
+            if (entries[0].building.needsRoad) roadGroups.push(entries);
+            else noRoadGroups.push(entries);
+        }
+        roadGroups.sort(sortByArea);
+        noRoadGroups.sort(sortByArea);
+
+        const sections = [];
+        if (roadGroups.length)   sections.push({ label: t('pool.needsRoad'), groups: roadGroups });
+        if (noRoadGroups.length) sections.push({ label: t('pool.noRoad'),    groups: noRoadGroups });
+
+        sections.forEach(({ label, groups: sectionGroups }) => {
+            const header = document.createElement('div');
+            header.className = 'pool-section-header';
+            header.textContent = label;
+            list.appendChild(header);
+
+            sectionGroups.forEach((entries) => {
             const { building, idx } = entries[0];
             const count = entries.length;
             const item = document.createElement('div');
@@ -630,6 +649,7 @@ export class CityPlanner {
             });
             item.addEventListener('mouseleave', () => this._hidePoolTooltip());
             list.appendChild(item);
+            });
         });
     }
 

@@ -78,6 +78,8 @@ export const ES = {
     'pool.header': 'Reserva de edificios',
     'pool.hint':   'Arrastra edificios fuera de la cuadrícula para almacenarlos. Haz clic para volver a colocar.',
     'pool.empty':  'Aún no hay edificios aquí.\nArrastra un edificio fuera de la cuadrícula.',
+    'pool.needsRoad': 'Necesita camino',
+    'pool.noRoad':    'Sin camino',
 
     // ── Context menus ─────────────────────────────────────────────────────
     'ctx.duplicate':        '⧉ Duplicar y arrastrar',

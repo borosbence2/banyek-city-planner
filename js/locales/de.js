@@ -78,6 +78,8 @@ export const DE = {
     'pool.header': 'Gebäudevorrat',
     'pool.hint':   'Gebäude vom Raster hierher ziehen. Klicken zum Zurückplatzieren.',
     'pool.empty':  'Noch keine Gebäude hier.\nGebäude vom Raster hierher ziehen.',
+    'pool.needsRoad': 'Straße nötig',
+    'pool.noRoad':    'Ohne Straße',
 
     // ── Context menus ─────────────────────────────────────────────────────
     'ctx.duplicate':        '⧉ Duplizieren & ziehen',

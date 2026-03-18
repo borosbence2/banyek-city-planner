@@ -1484,6 +1484,20 @@ body.dark .help-forras { color: #484868; }
     flex-shrink: 0;
 }
 
+.pool-section-header {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #7a8a9e;
+    padding: 8px 8px 3px;
+    margin-top: 2px;
+}
+
+.pool-section-header:first-child {
+    margin-top: 0;
+}
+
 .pool-empty {
     text-align: center;
     color: #bbb;
@@ -2154,6 +2168,10 @@ body.dark .pool-item-size {
 
 body.dark .pool-item-count {
     background: #3a5a9a;
+}
+
+body.dark .pool-section-header {
+    color: #6a6a90;
 }
 
 body.dark .pool-empty {

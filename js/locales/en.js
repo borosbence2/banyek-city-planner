@@ -78,6 +78,8 @@ export const EN = {
     'pool.header': 'Building Pool',
     'pool.hint':   'Drag buildings off the grid to store them here. Click to place back.',
     'pool.empty':  'No buildings here yet.\nDrag a building off the grid to store it.',
+    'pool.needsRoad': 'Needs Road',
+    'pool.noRoad':    'No Road',
 
     // ── Context menus ─────────────────────────────────────────────────────
     'ctx.duplicate':        '⧉ Duplicate & drag',

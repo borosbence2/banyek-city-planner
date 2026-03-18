@@ -78,6 +78,8 @@ export const HU = {
     'pool.header': 'Épület készlet',
     'pool.hint':   'Húzz le épületet a vászonról. Kattints a visszahelyezéshez.',
     'pool.empty':  'Még nincs itt épület.\nHúzz le épületet a vászonról.',
+    'pool.needsRoad': 'Utat igényel',
+    'pool.noRoad':    'Út nélkül',
 
     // ── Helyi menük ───────────────────────────────────────────────────────
     'ctx.duplicate':        '⧉ Másolás és húzás',
