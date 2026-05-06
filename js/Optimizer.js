@@ -190,16 +190,47 @@ export class Optimizer {
                     this._expandConnectedRoads(gridForRetry, W, H, blx, bly, b.width, b.height, connRoads);
                 }
 
-                const { placed, grid: newGrid } = this._placeMediumBuildingsRetry(
+                const { placed, grid: newGrid, connectedRoads: newConnRoads } = this._placeMediumBuildingsRetry(
                     gridForRetry, connRoads, W, H, medInLayout, offX, offY, centerLX, centerLY
                 );
 
                 // Apply: replace grid, drop old medium entries, insert newly placed ones
                 globalBest.grid = newGrid;
+                globalBest.connectedRoads = newConnRoads;
                 globalBest.buildings = globalBest.buildings.filter(b => !medInLayout.includes(b));
                 for (const { b, lx, ly } of placed)
                     globalBest.buildings.push({ ...b, x: lx + offX, y: ly + offY });
                 globalBest.buildingsPlaced = globalBest.buildings.filter(b => !p.isTownhall(b)).length;
+            }
+        }
+
+        // ── Small-building gap fill (post medium retry) ────────────────
+        {
+            const placedOptIds = new Set(globalBest.buildings.map(b => b._optId).filter(Boolean));
+            const smallUnplaced = roadBuildings.filter(b =>
+                !placedOptIds.has(b._optId) && Math.max(b.width, b.height) <= 2
+            );
+            if (smallUnplaced.length > 0) {
+                // Rebuild connected roads if not already available from medium retry
+                if (!globalBest.connectedRoads) {
+                    const { thLX, thLY } = globalBest;
+                    globalBest.connectedRoads = this._findConnectedRoads(
+                        globalBest.grid, W, H, thLX, thLY, thEntry.width, thEntry.height
+                    );
+                    for (const b of globalBest.buildings) {
+                        if (p.isTownhall(b)) continue;
+                        const blx = b.x - offX, bly = b.y - offY;
+                        this._expandConnectedRoads(globalBest.grid, W, H, blx, bly, b.width, b.height, globalBest.connectedRoads);
+                    }
+                }
+
+                const gapFilled = this._gapFillSmallBuildings(
+                    globalBest.grid, W, H, globalBest.connectedRoads,
+                    globalBest.buildings, smallUnplaced, offX, offY
+                );
+                if (gapFilled > 0)
+                    globalBest.buildingsPlaced = globalBest.buildings.filter(b => !p.isTownhall(b)).length;
+                for (const b of smallUnplaced) delete b._gapFilled;
             }
         }
 
@@ -325,10 +356,14 @@ export class Optimizer {
 
         const hConfigs = [], vConfigs = [];
         for (const thQuadrant of [0, 1, 2, 3]) {
-            for (const sp of hSnakeSpacings)
+            for (const sp of hSnakeSpacings) {
                 hConfigs.push({ name: `h-q${thQuadrant}-sp${sp}`, snakeAxis: 'h', thQuadrant, segSpacing: sp });
-            for (const sp of vSnakeSpacings)
+                hConfigs.push({ name: `h-br${thQuadrant}-sp${sp}`, snakeAxis: 'h', thQuadrant, segSpacing: sp, thMode: 'branch' });
+            }
+            for (const sp of vSnakeSpacings) {
                 vConfigs.push({ name: `v-q${thQuadrant}-sp${sp}`, snakeAxis: 'v', thQuadrant, segSpacing: sp });
+                vConfigs.push({ name: `v-br${thQuadrant}-sp${sp}`, snakeAxis: 'v', thQuadrant, segSpacing: sp, thMode: 'branch' });
+            }
         }
 
         // Interleave h and v configs according to the computed ratio.
@@ -380,7 +415,7 @@ export class Optimizer {
         return connected;
     }
 
-    _findBestRoadAdjacentPos(grid, W, H, b, centerLX, centerLY, connectedRoads) {
+    _findBestRoadAdjacentPos(grid, W, H, b, centerLX, centerLY, connectedRoads, strictShortSide = false) {
         const bw = b.width, bh = b.height;
         let bestPos = null, bestScore = Infinity;
 
@@ -410,8 +445,7 @@ export class Optimizer {
                 }
                 const isLgRF = Math.min(bw, bh) > 5;
                 if (isLgRF && roadTouchCount > 2) continue; // large: max 2 touches (road tip only)
-                if (!isLgRF && roadTouchCount > Math.min(bw, bh) + 1) continue;
-                if (roadTouchCount > 6) continue;
+                if (!isLgRF && roadTouchCount > Math.max(bw, bh) + 2) continue;
 
                 let packCount = 0;
                 for (let dx = 0; dx < bw; dx++) {
@@ -438,15 +472,23 @@ export class Optimizer {
                 }
                 const touchesH = trRoad || brRoad; // road on top or bottom face (spans bw)
                 const touchesV = lrRoad || rrRoad; // road on left or right face (spans bh)
+
+                // Strict short-side filter: only accept positions where the shorter
+                // edge of the building faces the road (used in first pass of retry)
+                if (strictShortSide && bw !== bh) {
+                    const shortFace = bw < bh ? touchesH : touchesV;
+                    if (!shortFace) continue;
+                }
+
                 const isIC = touchesH && touchesV;
                 const minS = Math.min(bw, bh);
                 let posScore = 0;
                 if (minS > 5  && !isIC) posScore = -500; // bonus for outer/road-end
                 if (minS > 5  && isIC)  posScore =  3000; // strong penalty for inner corners
-                // Medium buildings: prefer shorter face toward road (single-axis only)
+                // Medium buildings: strongly prefer short face toward road
                 if (minS >= 3 && minS <= 5 && bw !== bh && (touchesH !== touchesV)) {
                     const shortFaceToRoad = bw < bh ? touchesH : touchesV;
-                    if (!shortFaceToRoad) posScore += 1500; // penalty: long side faces road
+                    if (shortFaceToRoad) posScore -= 5000;
                 }
 
                 const score = distToCenter * 10 - packCount * 30 + posScore;
@@ -519,6 +561,46 @@ export class Optimizer {
         return { large, medium, small };
     }
 
+    /**
+     * Compute variable corridor widths for the snake layout.
+     * Each corridor is sized for its tallest building PLUS room for a smaller
+     * building on the opposite side of the road (minPerp).
+     *
+     * Formula: width[i] = (segSpacing - maxPerp + minPerp) + groupPerp[i]
+     * Corridor 0 (widest) = segSpacing + minPerp  (wider than constant spacing).
+     * Subsequent corridors shrink proportionally to their building dimensions.
+     */
+    _computeCorridorWidths(roadBuildings, maxCorridors, isHoriz, maxWidth) {
+        if (maxCorridors <= 0) return [];
+
+        // Only medium buildings drive corridor width; large go to corners, small fit anywhere
+        const perpDims = roadBuildings
+            .filter(b => Math.min(b.width, b.height) <= 5 && Math.max(b.width, b.height) > 2)
+            .map(b => isHoriz ? b.height : b.width)
+            .sort((a, b) => b - a); // descending
+
+        if (perpDims.length === 0) {
+            return Array(maxCorridors).fill(Math.min(maxWidth, 4));
+        }
+
+        const maxPerp = perpDims[0];
+        const minPerp = perpDims[perpDims.length - 1];
+        // base = config margin + opposite-side building allowance + extra clearance
+        const base = maxWidth - maxPerp + minPerp + 2;
+        const groupSize = Math.ceil(perpDims.length / maxCorridors);
+        const widths = [];
+        for (let c = 0; c < maxCorridors; c++) {
+            const start = c * groupSize;
+            if (start >= perpDims.length) {
+                widths.push(Math.max(3, base + minPerp));
+                continue;
+            }
+            // Corridor width = base margin + this group's tallest perpendicular dim
+            widths.push(Math.max(3, base + perpDims[start]));
+        }
+
+        return widths;
+    }
 
     /**
      * Snake/zigzag road strategy.
@@ -550,44 +632,61 @@ export class Optimizer {
         const iY1 = BORDER, iY2 = H - 1 - BORDER;
         if (iX2 - iX1 < 4 || iY2 - iY1 < 4) return null; // grid too small
 
-        // Corner position — used for seg0 span calculations regardless of where TH ends up
-        const qx = thQuadrant % 2 === 0 ? 0 : W - thW;
-        const qy = thQuadrant < 2 ? 0 : H - thH;
-        const cornerThLX = Math.max(0, Math.min(W - thW, qx));
-        const cornerThLY = Math.max(0, Math.min(H - thH, qy));
-
-        // Try placing TH at the first bend of the snake instead of the corner.
-        // The first bend is where seg0 meets the first connector.
-        // Placing TH there creates an extra dead-end pocket at the old corner area.
-        const goDown  = thQuadrant < 2;          // H snake direction
-        const goRight = thQuadrant % 2 === 0;    // V snake direction
-        const bendSeg0Y = goDown  ? cornerThLY + thH : cornerThLY - 1;
-        const bendSeg0X = goRight ? cornerThLX + thW : cornerThLX - 1;
-        let thLX_b, thLY_b;
-        if (isHoriz) {
-            const connXb = goRight ? iX2 : iX1;
-            thLX_b = goRight ? connXb + 1     : connXb - thW;
-            thLY_b = goDown  ? bendSeg0Y - thH + 1 : bendSeg0Y;
-        } else {
-            const connYb = thQuadrant < 2 ? iY2 : iY1;
-            thLX_b = goRight ? bendSeg0X - thW + 1 : bendSeg0X;
-            thLY_b = thQuadrant < 2 ? connYb + 1   : connYb - thH;
-        }
-        const bendOK = thLX_b >= 0 && thLY_b >= 0
-                    && thLX_b + thW <= W && thLY_b + thH <= H
-                    && this._isAreaFreeFG(grid, W, H, thLX_b, thLY_b, thW, thH);
-
+        const isBranch = config.thMode === 'branch';
         let thLX, thLY;
-        if (bendOK) {
-            thLX = thLX_b;
-            thLY = thLY_b;
-        } else {
-            thLX = cornerThLX;
-            thLY = cornerThLY;
+
+        if (isBranch) {
+            // TH at edge center — frees corners for large building placement.
+            // A short branch road will connect TH to the nearest snake segment.
+            if (isHoriz) {
+                thLX = Math.floor(W / 2 - thW / 2);
+                thLY = thQuadrant < 2 ? 0 : H - thH;
+            } else {
+                thLX = thQuadrant % 2 === 0 ? 0 : W - thW;
+                thLY = Math.floor(H / 2 - thH / 2);
+            }
             if (!this._isAreaFreeFG(grid, W, H, thLX, thLY, thW, thH)) {
                 const found = this._findNearestFreeFG(grid, W, H, thW, thH, thLX, thLY);
                 if (!found) return null;
                 [thLX, thLY] = found;
+            }
+        } else {
+            // Corner position — used for seg0 span calculations
+            const qx = thQuadrant % 2 === 0 ? 0 : W - thW;
+            const qy = thQuadrant < 2 ? 0 : H - thH;
+            const cornerThLX = Math.max(0, Math.min(W - thW, qx));
+            const cornerThLY = Math.max(0, Math.min(H - thH, qy));
+
+            // Try placing TH at the first bend of the snake instead of the corner.
+            const goDown  = thQuadrant < 2;
+            const goRight = thQuadrant % 2 === 0;
+            const bendSeg0Y = goDown  ? cornerThLY + thH : cornerThLY - 1;
+            const bendSeg0X = goRight ? cornerThLX + thW : cornerThLX - 1;
+            let thLX_b, thLY_b;
+            if (isHoriz) {
+                const connXb = goRight ? iX2 : iX1;
+                thLX_b = goRight ? connXb + 1     : connXb - thW;
+                thLY_b = goDown  ? bendSeg0Y - thH + 1 : bendSeg0Y;
+            } else {
+                const connYb = thQuadrant < 2 ? iY2 : iY1;
+                thLX_b = goRight ? bendSeg0X - thW + 1 : bendSeg0X;
+                thLY_b = thQuadrant < 2 ? connYb + 1   : connYb - thH;
+            }
+            const bendOK = thLX_b >= 0 && thLY_b >= 0
+                        && thLX_b + thW <= W && thLY_b + thH <= H
+                        && this._isAreaFreeFG(grid, W, H, thLX_b, thLY_b, thW, thH);
+
+            if (bendOK) {
+                thLX = thLX_b;
+                thLY = thLY_b;
+            } else {
+                thLX = cornerThLX;
+                thLY = cornerThLY;
+                if (!this._isAreaFreeFG(grid, W, H, thLX, thLY, thW, thH)) {
+                    const found = this._findNearestFreeFG(grid, W, H, thW, thH, thLX, thLY);
+                    if (!found) return null;
+                    [thLX, thLY] = found;
+                }
             }
         }
         for (let dy = 0; dy < thH; dy++)
@@ -623,6 +722,10 @@ export class Optimizer {
         const requiredCorners = Math.ceil(_lgForSegs.length / 2);
         const numSegs = Math.min(8, Math.max(2, Math.ceil(targetRoads / segCost), requiredCorners + 1));
 
+        // Variable corridor widths — each corridor sized to its building content
+        const corridorWidths = this._computeCorridorWidths(
+            roadBuildings, numSegs - 1, isHoriz, segSpacing);
+
         // How much to trim the dead-end of the last snake segment so a large building
         // can sit there touching only the tip road cell (no connector on that side).
         // The BORDER gives 9 free cells beyond iX1/iY1; we shorten to extend that pocket.
@@ -633,34 +736,59 @@ export class Optimizer {
             Math.max(0, _maxLargeDim - BORDER + 1) // enough room (+1 margin) for widest large bld
         );
 
+        // Extend connectors for buildings that don't match the snake orientation.
+        // V snake: wide buildings (w > h) need H road → extend H connectors.
+        // H snake: tall buildings (h > w) need V road → extend V connectors.
+        // Uses road budget from segments, keeping total road count the same.
+        const medBldsMix = roadBuildings.filter(b =>
+            Math.min(b.width, b.height) <= 5 && Math.max(b.width, b.height) > 2);
+        const unmatchedArea = (isHoriz
+            ? medBldsMix.filter(b => b.height > b.width)
+            : medBldsMix.filter(b => b.width > b.height)
+        ).reduce((s, b) => s + b.width * b.height, 0);
+        const totalMedArea = medBldsMix.reduce((s, b) => s + b.width * b.height, 0);
+        const unmatchedRatio = totalMedArea > 0 ? unmatchedArea / totalMedArea : 0;
+        const connExtend = Math.min(
+            Math.floor(innerSegLen / 3),
+            Math.round(unmatchedRatio * innerSegLen * 0.4)
+        );
+
         // junctions[]: connector info used to seed corner fill zones
         // horiz: { connX, y1, y2 }   vert: { connY, x1, x2 }
         const junctions = [];
-
         if (isHoriz) {
             const goDown = thQuadrant < 2;
             const signY = goDown ? 1 : -1;
-            const seg0Y = goDown ? thLY + thH : thLY - 1;
+            const seg0Y = isBranch
+                ? (goDown ? iY1 : iY2)
+                : (goDown ? thLY + thH : thLY - 1);
             if (seg0Y < 0 || seg0Y >= H) return null;
 
-            // First segment: from TH's x edge to the far inner bound — connects TH to snake
-            // (may cross border near TH corner, but that's fine for connectivity)
-            const fs_x1 = thQuadrant % 2 === 0 ? thLX : iX1;
-            const fs_x2 = thQuadrant % 2 === 0 ? iX2   : thLX + thW - 1;
-            for (let x = fs_x1; x <= fs_x2; x++) { if (!layRoad(x, seg0Y)) break; }
+            // First segment
+            if (isBranch) {
+                // Branch mode: full inner bounds (TH is at edge center, not corner)
+                for (let x = iX1; x <= iX2; x++) { if (!layRoad(x, seg0Y)) break; }
+            } else {
+                // Corner/bend mode: from TH's x edge to the far inner bound
+                const fs_x1 = thQuadrant % 2 === 0 ? thLX : iX1;
+                const fs_x2 = thQuadrant % 2 === 0 ? iX2   : thLX + thW - 1;
+                for (let x = fs_x1; x <= fs_x2; x++) { if (!layRoad(x, seg0Y)) break; }
+            }
 
             let prevY = seg0Y;
             // Connector starts on the inner-bound side opposite TH
             let connX = thQuadrant % 2 === 0 ? iX2 : iX1;
             let lastConnX = -1; // connector column used in the last full segment
 
+            let cumOffsetH = 0;
             for (let s = 1; s < numSegs && roadCount < targetRoads; s++) {
-                const segY = seg0Y + s * segSpacing * signY;
+                cumOffsetH += corridorWidths[s - 1];
+                const segY = seg0Y + cumOffsetH * signY;
                 if (segY < iY1 || segY > iY2) break;
 
-                // Connector
-                const y1 = Math.min(prevY, segY) + 1;
-                const y2 = Math.max(prevY, segY) - 1;
+                // Connector (extended for unmatched buildings)
+                const y1 = Math.max(iY1, Math.min(prevY, segY) - connExtend);
+                const y2 = Math.min(iY2, Math.max(prevY, segY) + connExtend);
                 for (let y = y1; y <= y2; y++) { if (!layRoad(connX, y)) break; }
                 junctions.push({ connX, y1, y2 });
 
@@ -682,28 +810,60 @@ export class Optimizer {
                     if (grid[prevY * W + x] === ROAD) { grid[prevY * W + x] = FREE; roadCount--; removed++; }
                 }
             }
+
+            // L-shaped branch: road along TH interior edge + vertical connector to seg0.
+            // Creates building frontage around TH and a corner for large building placement.
+            if (isBranch) {
+                const intY = goDown ? thLY + thH : thLY - 1;
+                const sideRight = thQuadrant % 2 === 0;
+                const sideX = sideRight ? thLX + thW : thLX - 1;
+
+                // Horizontal road along TH interior edge
+                for (let x = thLX; x < thLX + thW; x++) {
+                    if (intY >= 0 && intY < H && x >= 0 && x < W && grid[intY * W + x] === FREE) {
+                        grid[intY * W + x] = ROAD; roadCount++;
+                    }
+                }
+
+                // Vertical connector from corner of L to seg0
+                const vY1 = Math.min(intY, seg0Y);
+                const vY2 = Math.max(intY, seg0Y);
+                for (let y = vY1; y <= vY2; y++) {
+                    if (sideX >= 0 && sideX < W && y >= 0 && y < H && grid[y * W + sideX] === FREE) {
+                        grid[y * W + sideX] = ROAD; roadCount++;
+                    }
+                }
+            }
         } else {
             const goRight = thQuadrant % 2 === 0;
             const signX = goRight ? 1 : -1;
-            const seg0X = goRight ? thLX + thW : thLX - 1;
+            const seg0X = isBranch
+                ? (goRight ? iX1 : iX2)
+                : (goRight ? thLX + thW : thLX - 1);
             if (seg0X < 0 || seg0X >= W) return null;
 
-            // First segment: from TH's y edge to far inner bound
-            const fs_y1 = thQuadrant < 2 ? thLY : iY1;
-            const fs_y2 = thQuadrant < 2 ? iY2   : thLY + thH - 1;
-            for (let y = fs_y1; y <= fs_y2; y++) { if (!layRoad(seg0X, y)) break; }
+            // First segment
+            if (isBranch) {
+                for (let y = iY1; y <= iY2; y++) { if (!layRoad(seg0X, y)) break; }
+            } else {
+                const fs_y1 = thQuadrant < 2 ? thLY : iY1;
+                const fs_y2 = thQuadrant < 2 ? iY2   : thLY + thH - 1;
+                for (let y = fs_y1; y <= fs_y2; y++) { if (!layRoad(seg0X, y)) break; }
+            }
 
             let prevX = seg0X;
             let connY = thQuadrant < 2 ? iY2 : iY1;
             let lastConnY = -1; // connector row used in the last full segment
 
+            let cumOffsetV = 0;
             for (let s = 1; s < numSegs && roadCount < targetRoads; s++) {
-                const segX = seg0X + s * segSpacing * signX;
+                cumOffsetV += corridorWidths[s - 1];
+                const segX = seg0X + cumOffsetV * signX;
                 if (segX < iX1 || segX > iX2) break;
 
-                // Connector
-                const x1 = Math.min(prevX, segX) + 1;
-                const x2 = Math.max(prevX, segX) - 1;
+                // Connector (extended for unmatched buildings)
+                const x1 = Math.max(iX1, Math.min(prevX, segX) - connExtend);
+                const x2 = Math.min(iX2, Math.max(prevX, segX) + connExtend);
                 for (let x = x1; x <= x2; x++) { if (!layRoad(x, connY)) break; }
                 junctions.push({ connY, x1, x2 });
 
@@ -722,6 +882,29 @@ export class Optimizer {
                 let removed = 0;
                 for (let y = deadEndY; removed < DEAD_END_SHORTEN && y >= iY1 && y <= iY2; y += step) {
                     if (grid[y * W + prevX] === ROAD) { grid[y * W + prevX] = FREE; roadCount--; removed++; }
+                }
+            }
+
+            // L-shaped branch: road along TH interior edge + horizontal connector to seg0.
+            if (isBranch) {
+                const intX = goRight ? thLX + thW : thLX - 1;
+                const sideBottom = thQuadrant < 2;
+                const sideY = sideBottom ? thLY + thH : thLY - 1;
+
+                // Vertical road along TH interior edge
+                for (let y = thLY; y < thLY + thH; y++) {
+                    if (intX >= 0 && intX < W && y >= 0 && y < H && grid[y * W + intX] === FREE) {
+                        grid[y * W + intX] = ROAD; roadCount++;
+                    }
+                }
+
+                // Horizontal connector from corner of L to seg0
+                const hX1 = Math.min(intX, seg0X);
+                const hX2 = Math.max(intX, seg0X);
+                for (let x = hX1; x <= hX2; x++) {
+                    if (sideY >= 0 && sideY < H && x >= 0 && x < W && grid[sideY * W + x] === FREE) {
+                        grid[sideY * W + x] = ROAD; roadCount++;
+                    }
                 }
             }
         }
@@ -1136,57 +1319,7 @@ export class Optimizer {
         }
     }
 
-    // Returns true if the building at (lx,ly) has its shorter side touching a connected road.
-    // For square buildings, any side counts as "shorter".
-    _shortSideTouchesRoad(W, H, lx, ly, bw, bh, connectedRoads) {
-        if (bw === bh) return true; // square: any orientation is fine
-        if (bw < bh) {
-            // shorter side = top/bottom (width = bw cells)
-            for (let dx = 0; dx < bw; dx++) {
-                if (ly > 0 && connectedRoads.has((ly - 1) * W + lx + dx)) return true;
-                if (ly + bh < H && connectedRoads.has((ly + bh) * W + lx + dx)) return true;
-            }
-            return false;
-        } else {
-            // shorter side = left/right (height = bh cells)
-            for (let dy = 0; dy < bh; dy++) {
-                if (lx > 0 && connectedRoads.has((ly + dy) * W + lx - 1)) return true;
-                if (lx + bw < W && connectedRoads.has((ly + dy) * W + lx + bw)) return true;
-            }
-            return false;
-        }
-    }
-
-    // Like _findBestRoadAdjacentPos but strictly requires the shorter side to face the road.
-    _findStrictShortSidePos(grid, W, H, b, centerLX, centerLY, connectedRoads) {
-        const bw = b.width, bh = b.height;
-        let bestPos = null, bestScore = Infinity;
-
-        for (let ly = 0; ly <= H - bh; ly++) {
-            for (let lx = 0; lx <= W - bw; lx++) {
-                if (!this._isAreaFreeFG(grid, W, H, lx, ly, bw, bh)) continue;
-                if (!this._touchesConnectedRoad(grid, W, H, lx, ly, bw, bh, connectedRoads)) continue;
-                if (!this._shortSideTouchesRoad(W, H, lx, ly, bw, bh, connectedRoads)) continue;
-
-                let packCount = 0;
-                for (let dx = 0; dx < bw; dx++) {
-                    if (ly > 0 && grid[(ly - 1) * W + lx + dx] === BUILDING) packCount++;
-                    if (ly + bh < H && grid[(ly + bh) * W + lx + dx] === BUILDING) packCount++;
-                }
-                for (let dy = 0; dy < bh; dy++) {
-                    if (lx > 0 && grid[(ly + dy) * W + lx - 1] === BUILDING) packCount++;
-                    if (lx + bw < W && grid[(ly + dy) * W + lx + bw] === BUILDING) packCount++;
-                }
-
-                const distToCenter = Math.abs(lx + bw / 2 - centerLX) + Math.abs(ly + bh / 2 - centerLY);
-                const score = distToCenter * 10 - packCount * 30;
-                if (score < bestScore) { bestScore = score; bestPos = [lx, ly]; }
-            }
-        }
-        return bestPos;
-    }
-
-    // Try to place all medium buildings with shorter-side-to-road, retrying with shuffled
+    // Try to place all medium buildings road-adjacent, retrying with shuffled
     // orderings until all are placed or 30 seconds elapse. Returns the best result found.
     _placeMediumBuildingsRetry(gridBase, connRoadsBase, W, H, medBuildings, offX, offY, centerLX, centerLY) {
         const MEDIUM_TIME_LIMIT = 30_000;
@@ -1207,8 +1340,22 @@ export class Optimizer {
             const placed = [];
             const tempBuildings = []; // throwaway — _stampBuilding needs an array param
 
+            // Pass 1: place buildings with their shorter side facing the road
+            const placedSet = new Set();
             for (const b of order) {
-                const pos = this._findStrictShortSidePos(grid, W, H, b, centerLX, centerLY, connectedRoads);
+                const pos = this._findBestRoadAdjacentPos(grid, W, H, b, centerLX, centerLY, connectedRoads, true);
+                if (pos) {
+                    const [lx, ly] = pos;
+                    this._stampBuilding(grid, W, lx, ly, b, tempBuildings, offX, offY);
+                    this._expandConnectedRoads(grid, W, H, lx, ly, b.width, b.height, connectedRoads);
+                    placed.push({ b, lx, ly });
+                    placedSet.add(b);
+                }
+            }
+            // Pass 2: remaining buildings with any orientation
+            for (const b of order) {
+                if (placedSet.has(b)) continue;
+                const pos = this._findBestRoadAdjacentPos(grid, W, H, b, centerLX, centerLY, connectedRoads);
                 if (pos) {
                     const [lx, ly] = pos;
                     this._stampBuilding(grid, W, lx, ly, b, tempBuildings, offX, offY);
@@ -1235,6 +1382,55 @@ export class Optimizer {
         }
 
         return { placed: bestPlaced, grid: bestGrid, connectedRoads: bestConnRoads };
+    }
+
+    /**
+     * Fill small road-adjacent gaps with unplaced small buildings (max(w,h) <= 2).
+     * Prefers positions surrounded by more buildings (true gap-filling).
+     * Operates on the flat Uint8Array grid. Returns the count of newly placed buildings.
+     */
+    _gapFillSmallBuildings(grid, W, H, connectedRoads, buildings, smallPool, offX, offY) {
+        const candidates = smallPool
+            .filter(b => !b._snakePlaced && !b._cornerPlaced && !b._gapFilled)
+            .sort((a, b) => (b.width * b.height) - (a.width * a.height)); // 2x2 > 2x1 > 1x1
+
+        let placed = 0;
+        for (const b of candidates) {
+            const bw = b.width, bh = b.height;
+            let bestPos = null, bestScore = Infinity;
+
+            for (let ly = 0; ly <= H - bh; ly++) {
+                for (let lx = 0; lx <= W - bw; lx++) {
+                    if (!this._isAreaFreeFG(grid, W, H, lx, ly, bw, bh)) continue;
+                    if (!this._touchesConnectedRoad(grid, W, H, lx, ly, bw, bh, connectedRoads)) continue;
+
+                    // Count adjacent building/TH cells — more neighbors = tighter gap fill
+                    let adj = 0;
+                    for (let dx = 0; dx < bw; dx++) {
+                        if (ly > 0     && (grid[(ly - 1)  * W + lx + dx] === BUILDING || grid[(ly - 1)  * W + lx + dx] === TOWNHALL)) adj++;
+                        if (ly + bh < H && (grid[(ly + bh) * W + lx + dx] === BUILDING || grid[(ly + bh) * W + lx + dx] === TOWNHALL)) adj++;
+                    }
+                    for (let dy = 0; dy < bh; dy++) {
+                        if (lx > 0     && (grid[(ly + dy) * W + lx - 1]  === BUILDING || grid[(ly + dy) * W + lx - 1]  === TOWNHALL)) adj++;
+                        if (lx + bw < W && (grid[(ly + dy) * W + lx + bw] === BUILDING || grid[(ly + dy) * W + lx + bw] === TOWNHALL)) adj++;
+                    }
+
+                    const score = -adj; // lower = better (more neighbors)
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestPos = [lx, ly];
+                    }
+                }
+            }
+
+            if (bestPos) {
+                this._stampBuilding(grid, W, bestPos[0], bestPos[1], b, buildings, offX, offY);
+                this._expandConnectedRoads(grid, W, H, bestPos[0], bestPos[1], bw, bh, connectedRoads);
+                b._gapFilled = true;
+                placed++;
+            }
+        }
+        return placed;
     }
 
     _isRoadlessCity() {
