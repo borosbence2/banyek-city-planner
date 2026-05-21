@@ -74,9 +74,10 @@ const RESOURCE_LABELS = {
 const TIMER_LABELS = {
     '5m': '5 min', '15m': '15 min', '1h': '1 hr',
     '4h': '4 hr',  '8h': '8 hr',   '10h': '10 hr', '24h': '24 hr',
+    't36000s': '10 hr', // QI cycle (36 000 s = 10 h)
 };
 
-const TIMERS_ORDERED = ['5m', '15m', '1h', '4h', '8h', '10h', '24h'];
+const TIMERS_ORDERED = ['5m', '15m', '1h', '4h', '8h', '10h', 't36000s', '24h'];
 
 // ── Key parsing ────────────────────────────────────────────────────────────
 function parseResourceKey(key) {
@@ -133,6 +134,11 @@ export class ProductionOverview {
         // Multi-age / fallback: use latest available era
         for (let i = ERA_CODES.length - 1; i >= 0; i--) {
             if (prod[ERA_CODES[i]]) return prod[ERA_CODES[i]];
+        }
+
+        // Last resort: AllAge / MultiAge / NoAge (used by QI buildings)
+        for (const key of MULTI_AGE_CODES) {
+            if (prod[key]) return prod[key];
         }
         return null;
     }

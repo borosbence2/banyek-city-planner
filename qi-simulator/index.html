@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QI Simulator — Redesigned Side Panel</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: 'Geist', ui-sans-serif, -apple-system, system-ui, sans-serif;
+  background: #c7c7e8;
+  color: #16181d;
+}
+#root { min-height: 100vh; }
+
+/* ═══════════════════════════════════════════════════════
+   panel.css — QI Simulator panel styling
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --qi-bg:        #f6f7fa;
+  --qi-panel:     #ffffff;
+  --qi-panel-2:   #fafbfd;
+  --qi-panel-3:   #f3f4f7;
+  --qi-border:    #e7e9ee;
+  --qi-border-2:  #dde0e7;
+  --qi-text:      #16181d;
+  --qi-text-2:    #5a606b;
+  --qi-text-3:    #9aa0ab;
+  --qi-accent:    #5b5fe5;
+  --qi-accent-2:  #4a4ed8;
+  --qi-accent-soft: #eef0fe;
+  --qi-pos:       #0e9f5e;
+  --qi-pos-soft:  #e7f5ee;
+  --qi-warn:      #d9842a;
+  --qi-warn-soft: #fbf2e3;
+  --qi-neg:       #d83a55;
+  --qi-neg-soft:  #fbe9ed;
+  --qi-red:       #e23856;
+  --qi-blue:      #3061d6;
+  --qi-amber:     #c08221;
+  --qi-violet:    #7c54d6;
+  --qi-cyan:      #1196b8;
+
+  --qi-rad:       8px;
+  --qi-rad-sm:    6px;
+  --qi-pad:       12px;
+  --qi-pad-sm:    8px;
+
+  --qi-font: 'Geist', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --qi-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.qi[data-dark="1"] {
+  --qi-bg:        #0e1016;
+  --qi-panel:     #14171f;
+  --qi-panel-2:   #1a1d27;
+  --qi-panel-3:   #1f2330;
+  --qi-border:    #262a36;
+  --qi-border-2:  #303544;
+  --qi-text:      #e8eaef;
+  --qi-text-2:    #9aa0ab;
+  --qi-text-3:    #6b7280;
+  --qi-accent:    #818cf8;
+  --qi-accent-2:  #a5b0fc;
+  --qi-accent-soft: #1d203a;
+  --qi-pos:       #34d399;
+  --qi-pos-soft:  #0e2b21;
+  --qi-warn:      #f59e0b;
+  --qi-warn-soft: #2a1e0a;
+  --qi-neg:       #f87171;
+  --qi-neg-soft:  #2a1014;
+  --qi-red:       #f87171;
+  --qi-blue:      #6ea0ff;
+  --qi-amber:     #f0b46a;
+  --qi-violet:    #b094ed;
+  --qi-cyan:      #67c8e0;
+}
+
+.qi {
+  width: 340px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  font-family: var(--qi-font);
+  font-size: 12.5px;
+  line-height: 1.4;
+  border-left: 1px solid var(--qi-border);
+  position: relative;
+  overflow: hidden;
+}
+.qi *, .qi *::before, .qi *::after { box-sizing: border-box; }
+.qi button { font-family: inherit; }
+.qi input { font-family: inherit; }
+
+.qi-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--qi-border);
+  background: var(--qi-panel);
+}
+.qi-hdr-l { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qi-hdr-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--qi-text-3);
+}
+.qi-hdr-title svg { color: var(--qi-accent); }
+.qi-hdr-cycle { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+.qi-hdr-cycle-n {
+  font-family: var(--qi-mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--qi-text);
+  line-height: 1;
+}
+.qi-hdr-cycle-l {
+  font-size: 11px;
+  color: var(--qi-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.qi-icon-btn {
+  appearance: none;
+  border: 1px solid var(--qi-border);
+  background: var(--qi-panel);
+  color: var(--qi-text-2);
+  width: 28px; height: 28px;
+  border-radius: var(--qi-rad-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all .12s ease;
+}
+.qi-icon-btn:hover {
+  border-color: var(--qi-neg);
+  color: var(--qi-neg);
+  background: var(--qi-neg-soft);
+}
+
+.qi-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--qi-border);
+  background: var(--qi-panel);
+}
+.qi-btn {
+  appearance: none;
+  border: 1px solid var(--qi-border);
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  border-radius: var(--qi-rad-sm);
+  padding: 8px 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .12s ease;
+}
+.qi-btn:hover { border-color: var(--qi-border-2); background: var(--qi-panel-2); }
+.qi-btn:active { transform: translateY(0.5px); }
+.qi-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+.qi-btn-primary {
+  background: var(--qi-accent);
+  color: #fff;
+  border-color: var(--qi-accent);
+  font-weight: 600;
+  padding: 9px 12px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
+  transition: all .15s ease;
+}
+.qi-btn-primary:hover { background: var(--qi-accent-2); border-color: var(--qi-accent-2); box-shadow: 0 2px 8px rgba(91,95,229,.25); }
+.qi-btn-primary .qi-btn-sub {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: .7;
+  font-variant-numeric: tabular-nums;
+}
+
+.qi-btn-ghost { background: var(--qi-panel-2); }
+
+.qi-skip { display: flex; gap: 4px; align-items: stretch; }
+.qi-skip .qi-btn-ghost {
+  padding: 6px 10px;
+  font-size: 11.5px;
+  flex: 0 0 auto;
+}
+.qi-skip-n {
+  width: 52px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-family: var(--qi-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  -moz-appearance: textfield;
+}
+.qi-skip-n::-webkit-outer-spin-button,
+.qi-skip-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qi-skip-l {
+  display: inline-flex; align-items: center;
+  font-size: 11.5px;
+  color: var(--qi-text-3);
+  padding-left: 2px;
+  flex: 1;
+}
+
+.qi-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--qi-border-2) transparent;
+}
+.qi-scroll::-webkit-scrollbar { width: 6px; }
+.qi-scroll::-webkit-scrollbar-thumb { background: var(--qi-border-2); border-radius: 3px; }
+.qi-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.qi-foot-pad { height: 60px; }
+
+.qi-sec { padding: 14px 14px 4px; border-bottom: 1px solid var(--qi-border); }
+.qi-sec:last-of-type { border-bottom: none; }
+.qi-sec-hd {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--qi-text-3);
+  margin-bottom: 10px;
+}
+.qi-sec-hd svg { color: var(--qi-text-3); }
+.qi-sec-body { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+
+.qi-vital {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--qi-panel-2);
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad);
+}
+.qi-vital-icon {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  background: var(--qi-panel-3);
+}
+.qi-vital--amber  .qi-vital-icon { background: #fbf2e3; color: var(--qi-amber); }
+.qi-vital--indigo .qi-vital-icon { background: var(--qi-accent-soft); color: var(--qi-accent); }
+.qi-vital--violet .qi-vital-icon { background: #f0eafe; color: var(--qi-violet); }
+.qi-vital--cyan   .qi-vital-icon { background: #e0f2f8; color: var(--qi-cyan); }
+.qi[data-dark="1"] .qi-vital--amber  .qi-vital-icon { background: #2a1e0a; }
+.qi[data-dark="1"] .qi-vital--violet .qi-vital-icon { background: #1d1730; }
+.qi[data-dark="1"] .qi-vital--cyan   .qi-vital-icon { background: #0e2128; }
+
+.qi-vital-mid { min-width: 0; }
+.qi-vital-label { font-size: 11.5px; color: var(--qi-text-2); font-weight: 500; }
+.qi-vital-rate {
+  font-size: 10.5px;
+  font-family: var(--qi-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--qi-pos);
+  margin-top: 1px;
+}
+.qi-vital-val {
+  font-family: var(--qi-mono);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--qi-text);
+  text-align: right;
+}
+.qi-vital-cap { font-size: 10px; color: var(--qi-text-3); font-weight: 500; margin-left: 2px; }
+.qi-vital-bar { height: 3px; background: var(--qi-panel-3); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.qi-vital-bar-fill { height: 100%; background: var(--qi-cyan); border-radius: 2px; transition: width .25s ease; }
+
+.qi-vital-strip { display: flex; gap: 6px; margin-top: 2px; }
+.qi-cm {
+  flex: 1;
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad-sm);
+  font-size: 10.5px;
+  background: var(--qi-panel-2);
+}
+.qi-cm svg { color: var(--qi-text-3); }
+.qi-cm-l { color: var(--qi-text-2); }
+.qi-cm-v { margin-left: auto; font-family: var(--qi-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--qi-text); }
+
+.qi-eu { display: flex; flex-direction: column; gap: 8px; }
+.qi-eu-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.qi-eu-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.qi-eu-pill span { opacity: .4; }
+.qi-eu-pill strong { font-family: var(--qi-mono); font-variant-numeric: tabular-nums; }
+.qi-eu-pill--neg     { background: var(--qi-neg-soft);   color: var(--qi-neg); }
+.qi-eu-pill--warn    { background: var(--qi-warn-soft);  color: var(--qi-warn); }
+.qi-eu-pill--neutral { background: var(--qi-panel-3);    color: var(--qi-text-2); }
+.qi-eu-pill--pos     { background: var(--qi-pos-soft);   color: var(--qi-pos); }
+.qi-eu-pill--accent  { background: var(--qi-accent-soft);color: var(--qi-accent); }
+
+.qi-eu-num { display: flex; align-items: baseline; gap: 2px; font-family: var(--qi-mono); font-size: 11.5px; color: var(--qi-text-2); }
+.qi-eu-input {
+  width: 44px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad-sm);
+  padding: 3px 5px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  -moz-appearance: textfield;
+}
+.qi-eu-input::-webkit-outer-spin-button,
+.qi-eu-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.qi-eu-track {
+  position: relative;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--qi-panel-3);
+  cursor: pointer;
+  border: 1px solid var(--qi-border);
+}
+.qi-eu-band { position: absolute; top: 0; bottom: 0; }
+.qi-eu-band--neg     { background: color-mix(in oklab, var(--qi-neg) 22%, transparent); }
+.qi-eu-band--warn    { background: color-mix(in oklab, var(--qi-warn) 22%, transparent); }
+.qi-eu-band--neutral { background: color-mix(in oklab, #aaa 22%, transparent); }
+.qi-eu-band--pos     { background: color-mix(in oklab, var(--qi-pos) 22%, transparent); }
+.qi-eu-band--accent  { background: color-mix(in oklab, var(--qi-accent) 32%, transparent); }
+.qi-eu-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,.18); }
+.qi[data-dark="1"] .qi-eu-tick { background: rgba(255,255,255,.18); }
+.qi-eu-thumb {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  background: var(--qi-text);
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px var(--qi-panel);
+  transition: left .15s ease;
+  pointer-events: none;
+}
+.qi-eu-hint { font-size: 10.5px; line-height: 1.45; color: var(--qi-text-3); }
+
+.qi-combat { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.qi-combat-tile {
+  display: grid;
+  grid-template-areas: "ic num" "ic lbl";
+  grid-template-columns: 22px 1fr;
+  gap: 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad);
+  background: var(--qi-panel-2);
+}
+.qi-combat-tile svg { grid-area: ic; align-self: center; color: var(--qi-text-3); }
+.qi-combat-num { grid-area: num; font-family: var(--qi-mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--qi-text); }
+.qi-combat-lbl { grid-area: lbl; font-size: 10.5px; color: var(--qi-text-3); }
+.qi-combat-tile[data-tone="red"]  svg { color: var(--qi-red); }
+.qi-combat-tile[data-tone="blue"] svg { color: var(--qi-blue); }
+
+.qi-chip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.qi-chip-grid--units { grid-template-columns: repeat(3, 1fr); }
+.qi-ic {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 7px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad-sm);
+  background: var(--qi-panel-2);
+  font-size: 10.5px;
+}
+.qi-ic.is-empty { opacity: .55; }
+.qi-ic.is-have { border-color: var(--qi-accent-soft); background: var(--qi-accent-soft); }
+.qi-ic.is-have .qi-ic-v { color: var(--qi-accent); }
+.qi-ic.is-have svg { color: var(--qi-accent); }
+.qi-ic svg { color: var(--qi-text-3); }
+.qi-ic-l { flex: 1; color: var(--qi-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qi-ic-v { font-family: var(--qi-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--qi-text); }
+.qi-ic.is-compact .qi-ic-l { font-size: 10px; }
+
+.qi-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--qi-panel-3);
+  padding: 3px;
+  border-radius: var(--qi-rad);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.qi-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 6px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--qi-text-2);
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  transition: all .12s ease;
+}
+.qi-tab:hover { color: var(--qi-text); }
+.qi-tab.is-active { background: var(--qi-panel); color: var(--qi-text); box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 0 0 1px var(--qi-border); }
+.qi[data-dark="1"] .qi-tab.is-active { background: var(--qi-panel-2); box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 0 0 1px var(--qi-border-2); }
+
+.qi-act-list { display: flex; flex-direction: column; gap: 6px; }
+.qi-br {
+  display: flex; align-items: center;
+  padding: 8px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad);
+  background: var(--qi-panel-2);
+  gap: 8px;
+}
+.qi-br-l { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.qi-br-l > svg { color: var(--qi-accent); flex-shrink: 0; }
+.qi-br-info { min-width: 0; flex: 1; }
+.qi-br-name { font-size: 11.5px; font-weight: 600; color: var(--qi-text); display: flex; align-items: baseline; gap: 5px; }
+.qi-br-count { font-size: 9.5px; font-weight: 700; color: var(--qi-accent); background: var(--qi-accent-soft); padding: 1px 5px; border-radius: 99px; }
+.qi-br-sub { display: flex; align-items: center; gap: 3px; font-size: 10.5px; font-family: var(--qi-mono); font-variant-numeric: tabular-nums; color: var(--qi-text-3); margin-top: 1px; }
+.qi-br-sub svg { color: var(--qi-text-3); margin-left: 2px; }
+.qi-br-btns { display: flex; gap: 3px; flex-shrink: 0; }
+.qi-batch {
+  appearance: none;
+  border: 1px solid var(--qi-border);
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 10.5px;
+  font-family: var(--qi-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 28px;
+  transition: all .12s ease;
+}
+.qi-batch:hover:not(:disabled) { background: var(--qi-accent); color: #fff; border-color: var(--qi-accent); }
+.qi-batch.is-poor { opacity: .35; cursor: not-allowed; }
+
+.qi-sr-list { display: flex; flex-direction: column; gap: 4px; }
+.qi-sr-hd { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--qi-text-3); padding: 4px 4px 2px; }
+.qi-sr {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--qi-border);
+  border-radius: var(--qi-rad-sm);
+  background: var(--qi-panel-2);
+  font-size: 11px;
+}
+.qi-sr > svg { color: var(--qi-accent); flex-shrink: 0; }
+.qi-sr-l { flex: 1; color: var(--qi-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qi-sr-have { font-family: var(--qi-mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--qi-text); font-size: 10.5px; padding: 1px 5px; background: var(--qi-panel-3); border-radius: 4px; min-width: 24px; text-align: center; }
+.qi-sr-n { width: 36px; border: 1px solid var(--qi-border); border-radius: 4px; padding: 3px 4px; font: inherit; font-family: var(--qi-mono); font-variant-numeric: tabular-nums; text-align: right; background: var(--qi-panel); color: var(--qi-text); -moz-appearance: textfield; }
+.qi-sr-n::-webkit-outer-spin-button, .qi-sr-n::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qi-sr-btn { appearance: none; border: 1px solid var(--qi-border); background: var(--qi-panel); color: var(--qi-text); border-radius: 5px; padding: 3px 7px; font-size: 10.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.qi-sr-btn:hover { background: var(--qi-accent); color: #fff; border-color: var(--qi-accent); }
+
+.qi-empty { font-size: 11px; color: var(--qi-text-3); font-style: italic; text-align: center; padding: 8px; }
+
+.qi-acc { border-bottom: 1px solid var(--qi-border); }
+.qi-acc-hd {
+  appearance: none;
+  border: none;
+  background: var(--qi-panel);
+  color: var(--qi-text);
+  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qi-text-3);
+  cursor: pointer;
+}
+.qi-acc-hd > svg:first-child { color: var(--qi-text-3); }
+.qi-acc-title { letter-spacing: 0.08em; }
+.qi-acc-hint { font-size: 10.5px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--qi-text-3); margin-left: auto; opacity: .8; }
+.qi-acc-chev { margin-left: auto; color: var(--qi-text-3); display: inline-flex; }
+.qi-acc[data-open="1"] .qi-acc-hint { display: none; }
+.qi-acc-body { padding: 0 14px 14px; }
+
+.qi-form { display: flex; flex-direction: column; gap: 6px; }
+.qi-fld { display: flex; align-items: center; gap: 8px; font-size: 11.5px; }
+.qi-fld-l { display: inline-flex; align-items: center; gap: 6px; flex: 1; color: var(--qi-text-2); }
+.qi-fld-l svg { color: var(--qi-text-3); }
+.qi-fld-i { width: 92px; border: 1px solid var(--qi-border); border-radius: var(--qi-rad-sm); padding: 5px 8px; font-size: 11.5px; font-family: var(--qi-mono); font-variant-numeric: tabular-nums; text-align: right; background: var(--qi-panel); color: var(--qi-text); -moz-appearance: textfield; }
+.qi-fld-i::-webkit-outer-spin-button, .qi-fld-i::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qi-fld-pct { display: inline-flex; align-items: center; gap: 3px; color: var(--qi-text-3); font-size: 11px; }
+.qi-fld-pct .qi-fld-i { width: 62px; }
+.qi-form-apply { margin-top: 6px; width: 100%; }
+
+.qi-log { border-top: 1px solid var(--qi-border); background: var(--qi-panel); display: flex; flex-direction: column; flex-shrink: 0; max-height: 40%; }
+.qi-log.is-open { box-shadow: 0 -8px 24px rgba(0,0,0,.06); }
+.qi-log-hd { appearance: none; border: none; background: var(--qi-panel-2); width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--qi-text-2); cursor: pointer; border-bottom: 1px solid var(--qi-border); }
+.qi-log-hd svg { color: var(--qi-text-3); }
+.qi-log-hd-l { flex: 1; text-align: left; }
+.qi-log-hd-c { font-family: var(--qi-mono); font-variant-numeric: tabular-nums; background: var(--qi-accent-soft); color: var(--qi-accent); padding: 1px 6px; border-radius: 99px; font-size: 10px; }
+.qi-log-peek { padding: 6px 14px 10px; font-size: 11px; color: var(--qi-text-3); font-variant-numeric: tabular-nums; font-family: var(--qi-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qi-log-peek em { font-style: normal; color: var(--qi-accent); font-weight: 600; margin-right: 5px; }
+.qi-log-body { flex: 1; overflow-y: auto; padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 3px; scrollbar-width: thin; scrollbar-color: var(--qi-border-2) transparent; }
+.qi-log-body::-webkit-scrollbar { width: 6px; }
+.qi-log-body::-webkit-scrollbar-thumb { background: var(--qi-border-2); border-radius: 3px; }
+.qi-log-row { display: grid; grid-template-columns: 32px 1fr; gap: 8px; align-items: start; padding: 5px 8px 5px 6px; font-size: 10.5px; line-height: 1.45; border-radius: 5px; border-left: 2px solid var(--qi-border-2); }
+.qi-log-row:nth-child(odd) { background: var(--qi-panel-2); }
+.qi-log-row--start   { border-left-color: var(--qi-accent); }
+.qi-log-row--init    { border-left-color: var(--qi-text-3); }
+.qi-log-row--collect { border-left-color: var(--qi-pos); }
+.qi-log-row--skip    { border-left-color: var(--qi-accent); }
+.qi-log-row--produce { border-left-color: var(--qi-warn); }
+.qi-log-row--recruit { border-left-color: var(--qi-red); }
+.qi-log-row--spend   { border-left-color: var(--qi-violet); }
+.qi-log-c { font-family: var(--qi-mono); font-variant-numeric: tabular-nums; color: var(--qi-accent); font-weight: 600; font-size: 10px; }
+.qi-log-t { color: var(--qi-text); word-break: break-word; }
+
+.qi[data-density="compact"] { font-size: 12px; }
+.qi[data-density="compact"] .qi-sec { padding: 11px 12px 2px; }
+.qi[data-density="compact"] .qi-sec-body { gap: 6px; padding-bottom: 9px; }
+.qi[data-density="compact"] .qi-sec-hd { margin-bottom: 7px; }
+.qi[data-density="compact"] .qi-vital { padding: 6px 8px; gap: 8px; }
+.qi[data-density="compact"] .qi-hdr { padding: 11px 12px 8px; }
+.qi[data-density="compact"] .qi-actions { padding: 8px 12px 10px; }
+.qi[data-density="compact"] .qi-acc-hd { padding: 9px 12px; }
+.qi[data-density="compact"] .qi-acc-body { padding: 0 12px 11px; }
+
+.qi[data-density="comfy"] .qi-sec { padding: 18px 16px 6px; }
+.qi[data-density="comfy"] .qi-sec-body { gap: 10px; padding-bottom: 14px; }
+.qi[data-density="comfy"] .qi-vital { padding: 10px 12px; }
+.qi[data-density="comfy"] .qi-hdr-cycle-n { font-size: 30px; }
+
+/* ═══════════════════════════════════════════════════════
+   context.css — faded mock of the surrounding planner
+   ═══════════════════════════════════════════════════════ */
+
+.stage {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #c7c7e8 0%, #b8b9d6 100%);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage.is-dark { background: linear-gradient(180deg, #0a0c14 0%, #0f1019 100%); }
+
+.solo {
+  width: 340px;
+  height: 800px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+
+.ctx {
+  width: min(1480px, 100%);
+  height: min(880px, 92vh);
+  background: #e8eaf0;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 220px 1fr 340px;
+  grid-template-rows: 36px 56px 1fr;
+  grid-template-areas:
+    "tabs tabs panel"
+    "side toolbar panel"
+    "side canvas panel";
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+.stage.is-dark .ctx { background: #14151c; }
+
+.ctx-fade { display: contents; }
+.ctx-fade > *:not(.ctx-panel-slot) { opacity: .55; filter: saturate(0.6); pointer-events: none; }
+
+.ctx-panel-slot { grid-area: panel; height: 100%; overflow: hidden; z-index: 2; box-shadow: -10px 0 30px rgba(0,0,0,.05); background: white; }
+.stage.is-dark .ctx-panel-slot { background: #14171f; }
+
+.ctx-tabs { grid-area: tabs; display: flex; align-items: stretch; background: linear-gradient(180deg, #d4d6e8, #c3c5db); font-size: 11px; color: #555; padding: 0 8px; gap: 2px; }
+.ctx-tab { padding: 8px 12px; font-weight: 600; align-self: flex-end; background: rgba(255,255,255,.4); border-radius: 6px 6px 0 0; }
+.ctx-tab.is-active { background: #fff; color: #4350ce; }
+.ctx-tab-spacer { flex: 1; }
+.ctx-lang { padding: 8px 12px; font-size: 11px; color: #555; }
+
+.ctx-side { grid-area: side; background: linear-gradient(180deg, #f0f1f5, #e6e8ef); padding: 10px 8px; font-size: 10px; color: #555; overflow: hidden; border-right: 1px solid #d0d3de; display: flex; flex-direction: column; gap: 4px; }
+.ctx-side-title { font-size: 12px; font-weight: 700; color: #333; display: flex; justify-content: space-between; padding: 4px 4px 6px; border-bottom: 1px solid #d0d3de; margin-bottom: 4px; }
+.ctx-side-card { border: 1px solid #2ea84f; background: #ecf7ef; border-radius: 6px; padding: 6px; }
+.ctx-side-card-hd { font-size: 9px; font-weight: 700; color: #2ea84f; margin-bottom: 4px; }
+.ctx-side-card-btn { background: #2ea84f; color: white; border-radius: 4px; padding: 4px; text-align: center; font-size: 10px; }
+.ctx-side-btn { background: linear-gradient(135deg, #3a8eff, #0060dd); color: white; border-radius: 5px; padding: 5px 8px; font-size: 10px; font-weight: 600; }
+.ctx-side-btn--primary { background: #2864ce; }
+.ctx-side-sub { background: linear-gradient(135deg, #3a8eff, #0060dd); color: white; border-radius: 5px; padding: 4px 8px; font-size: 9px; }
+.ctx-side-search { background: white; border: 1px solid #d0d3de; padding: 4px 6px; border-radius: 4px; font-size: 9px; color: #888; }
+.ctx-side-cats { display: flex; gap: 2px; flex-wrap: wrap; }
+.ctx-side-cats span { background: linear-gradient(135deg, #3a8eff, #0060dd); color: white; padding: 3px 6px; font-size: 9px; border-radius: 3px; }
+.ctx-side-group { font-size: 9px; font-weight: 700; color: #4350ce; padding: 4px; display: flex; justify-content: space-between; }
+.ctx-side-blist { display: flex; flex-direction: column; gap: 1px; }
+.ctx-side-bi { font-size: 9px; background: linear-gradient(135deg, #6ec1ff, #4ba3f5); color: white; padding: 3px 6px; border-radius: 3px; display: flex; justify-content: space-between; }
+.ctx-side-bi.is-sel { background: linear-gradient(135deg, #4a7ee9, #3160c5); }
+
+.ctx-toolbar { grid-area: toolbar; background: white; border-bottom: 1px solid #d0d3de; display: flex; align-items: center; gap: 6px; padding: 0 16px; font-size: 11px; color: #555; }
+.ctx-tb-l { font-weight: 500; }
+.ctx-tb-inp { width: 36px; padding: 3px 5px; border: 1px solid #d0d3de; border-radius: 3px; text-align: center; }
+.ctx-tb-sp { flex: 1; }
+.ctx-tb-btn { border: 1px solid #d0d3de; background: #f0f1f5; padding: 4px 8px; border-radius: 4px; font-size: 10px; }
+
+.ctx-canvas { grid-area: canvas; background: linear-gradient(180deg, #f5f6fa, #eef0f6); position: relative; overflow: hidden; }
+.ctx-grid { position: absolute; inset: 24px; background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px); background-size: 40px 40px; border: 1px dashed rgba(80,100,200,0.25); }
+.ctx-toast { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(40,40,55,.92); color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.ctx-bld { position: absolute; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.ctx-bld--th { background: rgba(240,200,100,0.5); border-color: rgba(200,150,50,0.8); color: #5b400a; }
+.ctx-bld--res { background: rgba(110,180,150,0.4); border: 2px dashed rgba(80,150,120,0.8); color: #1d4d3d; }
+.ctx-bld--ghost { background: rgba(230,80,90,0.3); border-color: rgba(200,50,60,0.7); }
+
+@media (max-width: 1100px) {
+  .ctx { grid-template-columns: 0 1fr 340px; }
+  .ctx-side { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- tweaks-panel.jsx -->
+<script type="text/babel">
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+  .twk-field{appearance:none;box-sizing:border-box;width:100%;min-width:0;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;overflow-wrap:anywhere}
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip>span{position:absolute;top:0;bottom:0;right:0;width:34%;
+    display:flex;flex-direction:column;box-shadow:-1px 0 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i{flex:1;box-shadow:0 -1px 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i:first-child{box-shadow:none}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = { x: startRight - (ev.clientX - sx), y: startBottom - (ev.clientY - sy) };
+      clampToViewport();
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" onMouseDown={(e) => e.stopPropagation()} onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+function TweakSection({ label, children }) {
+  return (<><div className="twk-sect">{label}</div>{children}</>);
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value} onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => { if (!trackRef.current) return; const v = segAt(ev.clientX); if (v !== valueRef.current) onChange(v); };
+    const up = () => { setDragging(false); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown} className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb" style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`, width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>{o.label}</button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function __twkIsLight(hex) {
+  const h = String(hex).replace('#', '');
+  const x = h.length === 3 ? h.replace(/./g, (c) => c + c) : h.padEnd(6, '0');
+  const n = parseInt(x.slice(0, 6), 16);
+  if (Number.isNaN(n)) return true;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return r * 299 + g * 587 + b * 114 > 148000;
+}
+
+const __TwkCheck = ({ light }) => (
+  <svg viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" stroke={light ? 'rgba(0,0,0,.78)' : '#fff'} />
+  </svg>
+);
+
+function TweakColor({ label, value, options, onChange }) {
+  if (!options || !options.length) {
+    return (
+      <div className="twk-row twk-row-h">
+        <div className="twk-lbl"><span>{label}</span></div>
+        <input type="color" className="twk-swatch" value={value} onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+  const key = (o) => String(JSON.stringify(o)).toLowerCase();
+  const cur = key(value);
+  return (
+    <TweakRow label={label}>
+      <div className="twk-chips" role="radiogroup">
+        {options.map((o, i) => {
+          const colors = Array.isArray(o) ? o : [o];
+          const [hero, ...rest] = colors;
+          const sup = rest.slice(0, 4);
+          const on = key(o) === cur;
+          return (
+            <button key={i} type="button" className="twk-chip" role="radio" aria-checked={on} data-on={on ? '1' : '0'}
+                    aria-label={colors.join(', ')} title={colors.join(' · ')} style={{ background: hero }}
+                    onClick={() => onChange(o)}>
+              {sup.length > 0 && (<span>{sup.map((c, j) => <i key={j} style={{ background: c }} />)}</span>)}
+              {on && <__TwkCheck light={__twkIsLight(hero)} />}
+            </button>
+          );
+        })}
+      </div>
+    </TweakRow>
+  );
+}
+
+Object.assign(window, { useTweaks, TweaksPanel, TweakSection, TweakRow, TweakToggle, TweakRadio, TweakColor });
+</script>
+
+<!-- icons.jsx -->
+<script type="text/babel">
+const Icon = ({ d, size = 14, stroke = 1.6, fill = "none", style }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill={fill} stroke="currentColor"
+       strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round"
+       style={{ flexShrink: 0, display: "block", ...style }}
+       dangerouslySetInnerHTML={{ __html: d }} />
+);
+
+const IcCoin    = (p) => <Icon {...p} d='<circle cx="8" cy="8" r="5.5"/><path d="M6.2 6.4c.5-.7 1.2-1 2-1 1.1 0 1.8.6 1.8 1.5"/><path d="M6.2 9.6c.5.7 1.2 1 2 1 1.1 0 1.8-.6 1.8-1.5"/><path d="M5.6 6.6h3.6M5.6 9.4h3.6"/>' />;
+const IcSupply  = (p) => <Icon {...p} d='<path d="M2.5 5.5 8 2.7l5.5 2.8v5L8 13.3l-5.5-2.8z"/><path d="M2.5 5.5 8 8.3l5.5-2.8"/><path d="M8 8.3v5"/>' />;
+const IcAlloy   = (p) => <Icon {...p} d='<path d="m9.2 1.8-5 7.4h3.5L7 14.2l5-7.4H8.5l.7-5z"/>' />;
+const IcAction  = (p) => <Icon {...p} d='<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r=".7" fill="currentColor"/>' />;
+const IcShard   = (p) => <Icon {...p} d='<path d="m8 1.5 4.5 4-4.5 9-4.5-9z"/><path d="M3.5 5.5h9"/><path d="M8 5.5v9"/>' />;
+const IcLunar   = (p) => <Icon {...p} d='<path d="M11.5 9.2A5 5 0 1 1 6.8 4.5a4 4 0 0 0 4.7 4.7z"/>' />;
+const IcHoney   = (p) => <Icon {...p} d='<path d="M5 3h6l1.5 2.6L11 8.2l1.5 2.6L11 13.4H5l-1.5-2.6L5 8.2 3.5 5.6z"/>' />;
+const IcCopper  = (p) => <Icon {...p} d='<circle cx="8" cy="8" r="5.5"/><path d="M8 4.5v7M5 6.5h6M5 9.5h6"/>' />;
+const IcBrick   = (p) => <Icon {...p} d='<rect x="2.2" y="6" width="11.6" height="4"/><path d="M5.5 6V3.5h5V6M5.5 10v2.5h5V10M2.2 8h11.6"/>' />;
+const IcRope    = (p) => <Icon {...p} d='<path d="M3 5q2 3 5 0t5 0"/><path d="M3 8q2 3 5 0t5 0"/><path d="M3 11q2 3 5 0t5 0"/>' />;
+const IcPowder  = (p) => <Icon {...p} d='<circle cx="8" cy="9.5" r="4"/><path d="M8 5.5V2.5l2 1"/><path d="m11 6 1.5-1.5"/>' />;
+const IcBolt    = (p) => <Icon {...p} d='<path d="m9 1.5-6 8h4l-1 5 6-8H8z" />' />;
+const IcSkip    = (p) => <Icon {...p} d='<path d="M3 3 8 8l-5 5zM8 3l5 5-5 5z" fill="currentColor" stroke="none"/>' />;
+const IcReset   = (p) => <Icon {...p} d='<path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13.2 2.5V5h-2.5"/>' />;
+const IcCheck   = (p) => <Icon {...p} d='<path d="m3 8 3.5 3.5L13 5"/>' />;
+const IcSmile   = (p) => <Icon {...p} d='<circle cx="8" cy="8" r="5.8"/><path d="M5.5 9.5c.7 1 1.5 1.5 2.5 1.5s1.8-.5 2.5-1.5"/><circle cx="6" cy="6.8" r=".5" fill="currentColor" stroke="none"/><circle cx="10" cy="6.8" r=".5" fill="currentColor" stroke="none"/>' />;
+const IcSword   = (p) => <Icon {...p} d='<path d="m13.5 2.5-7 7"/><path d="m9 6 1 1"/><path d="m2.5 13.5 2.5-2.5 1-3 3-1L13 2"/><path d="m5 11 .8.8"/>' />;
+const IcShield  = (p) => <Icon {...p} d='<path d="M8 1.5 3 3.2v4.6c0 3 2.2 5.4 5 6.7 2.8-1.3 5-3.7 5-6.7V3.2z"/>' />;
+const IcHelmet  = (p) => <Icon {...p} d='<path d="M3 8a5 5 0 0 1 10 0v3H3z"/><path d="M3 11h10"/><path d="M8 4.5V11"/>' />;
+const IcFactory = (p) => <Icon {...p} d='<path d="M2 13V7l3 1.5V7l3 1.5V7l3 1.5V5h2v8z"/><path d="M2 13h12"/>' />;
+const IcSend    = (p) => <Icon {...p} d='<path d="m2 8 12-5-5 12-2-5z"/>' />;
+const IcChevD   = (p) => <Icon {...p} d='<path d="m3 6 5 4 5-4"/>' />;
+const IcChevU   = (p) => <Icon {...p} d='<path d="m3 10 5-4 5 4"/>' />;
+const IcSeedling= (p) => <Icon {...p} d='<path d="M8 13v-4"/><path d="M8 9a4 4 0 0 0-4-4H2.5a4 4 0 0 0 4 4z"/><path d="M8 9a4 4 0 0 1 4-4h1.5a4 4 0 0 1-4 4z"/>' />;
+const IcPlus    = (p) => <Icon {...p} d='<path d="M8 3v10M3 8h10"/>' />;
+const IcList    = (p) => <Icon {...p} d='<path d="M3 4h10M3 8h10M3 12h6"/>' />;
+
+window.QIIcons = {
+  IcCoin, IcSupply, IcAlloy, IcAction, IcShard, IcLunar,
+  IcHoney, IcCopper, IcBrick, IcRope, IcPowder,
+  IcBolt, IcSkip, IcReset, IcCheck, IcSmile,
+  IcSword, IcShield, IcHelmet, IcFactory, IcSend,
+  IcChevD, IcChevU, IcSeedling, IcPlus, IcList,
+};
+</script>
+
+<!-- panel.jsx -->
+<script type="text/babel">
+const {
+  IcCoin, IcSupply, IcAlloy, IcAction, IcShard, IcLunar,
+  IcHoney, IcCopper, IcBrick, IcRope, IcPowder,
+  IcBolt, IcSkip, IcReset, IcCheck, IcSmile,
+  IcSword, IcShield, IcHelmet, IcFactory, IcSend,
+  IcChevD, IcChevU, IcSeedling, IcPlus, IcList,
+} = window.QIIcons;
+
+const EUPHORIA_BANDS = [
+  { max: 20,  label: "Rebelling",    mult: 0.2, tone: "neg" },
+  { max: 60,  label: "Unruly",       mult: 0.6, tone: "warn" },
+  { max: 80,  label: "Unhappy",      mult: 0.8, tone: "warn" },
+  { max: 120, label: "Neutral",      mult: 1.0, tone: "neutral" },
+  { max: 140, label: "Content",      mult: 1.1, tone: "pos" },
+  { max: 200, label: "Happy",        mult: 1.2, tone: "pos" },
+  { max: 999, label: "Enthusiastic", mult: 1.5, tone: "accent" },
+];
+function bandFor(pct) {
+  return EUPHORIA_BANDS.find((b) => pct <= b.max) || EUPHORIA_BANDS[3];
+}
+
+const fmt = (n) => {
+  if (n === undefined || n === null || isNaN(n)) return "0";
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
+  return Math.round(n).toLocaleString("en-US");
+};
+const fmtSigned = (n) => (n >= 0 ? "+" : "") + fmt(n);
+
+const INITIAL_STATE = {
+  cycle: 0,
+  res: { coins: 100000, supplies: 100000, alloy: 0, actionPoints: 0, shards: 500, lunar: 0 },
+  apCap: 100000,
+  rates: { coins: 10500, supplies: 8300, alloy: 20, actionPoints: 700 },
+  goods: { honey: 0, copper: 0, brick: 0, rope: 0, powder: 0 },
+  units: { mercenary: 8, archer: 8, cavalry: 8, infantry: 8, catapult: 8 },
+  euphoria: 100,
+  atkBoost: 0,
+  defBoost: 0,
+  log: [
+    { id: 1, type: "start", cycle: 0, text: "Simulation started" },
+    { id: 2, type: "init",  cycle: 0, text: "Layout charged: Town Hall + 2× Kúria (-220k coins, -180k supplies)" },
+  ],
+};
+
+const RECRUIT_BUILDINGS = [
+  { id: "merc",  name: "Mercenary Camp",  icon: IcSword, unit: "Mercenary",      count: 2, costCoin: 12000, costSup: 9000,  batches: [1, 3, 6, 10] },
+  { id: "arch",  name: "Archery Range",   icon: IcSword, unit: "Mounted Archer", count: 1, costCoin: 14000, costSup: 11000, batches: [1, 3, 6, 10] },
+  { id: "siege", name: "Siege Camp",      icon: IcSword, unit: "Catapult",       count: 1, costCoin: 21000, costSup: 18000, batches: [1, 3, 6, 10] },
+];
+const PRODUCE_BUILDINGS = [
+  { id: "honey",  name: "Beekeeper",      icon: IcHoney,  good: "Honey",  count: 2, costCoin: 35000, costSup: 28000, batches: [4, 12, 24, 40] },
+  { id: "copper", name: "Copper Foundry", icon: IcCopper, good: "Copper", count: 1, costCoin: 38000, costSup: 30000, batches: [2, 6, 12, 20] },
+  { id: "rope",   name: "Ropery",         icon: IcRope,   good: "Rope",   count: 1, costCoin: 36000, costSup: 29000, batches: [2, 6, 12, 20] },
+];
+const GOODS_META = [
+  { key: "honey",  label: "Honey",     icon: IcHoney  },
+  { key: "copper", label: "Copper",    icon: IcCopper },
+  { key: "brick",  label: "Brick",     icon: IcBrick  },
+  { key: "rope",   label: "Rope",      icon: IcRope   },
+  { key: "powder", label: "Gunpowder", icon: IcPowder },
+];
+const UNIT_META = [
+  { key: "mercenary", label: "Mercenary",      icon: IcHelmet },
+  { key: "archer",    label: "Mounted Archer", icon: IcHelmet },
+  { key: "cavalry",   label: "Heavy Cavalry",  icon: IcHelmet },
+  { key: "infantry",  label: "Armored Inf.",   icon: IcHelmet },
+  { key: "catapult",  label: "Catapult",       icon: IcHelmet },
+];
+
+function QIPanel({ tweak }) {
+  const [state, setState] = React.useState(INITIAL_STATE);
+  const [skipN, setSkipN] = React.useState(10);
+  const [tab, setTab] = React.useState("recruit");
+  const [openSetup, setOpenSetup] = React.useState(false);
+  const [openBoosts, setOpenBoosts] = React.useState(false);
+  const [logOpen, setLogOpen] = React.useState(false);
+
+  const band = bandFor(state.euphoria);
+
+  function collect() {
+    setState((s) => {
+      const m = bandFor(s.euphoria).mult;
+      const gained = {
+        coins: Math.round(s.rates.coins * m),
+        supplies: Math.round(s.rates.supplies * m),
+        alloy: Math.round(s.rates.alloy * m),
+        actionPoints: s.rates.actionPoints,
+      };
+      const ap = Math.min(s.apCap, s.res.actionPoints + gained.actionPoints);
+      return {
+        ...s,
+        cycle: s.cycle + 1,
+        res: { ...s.res, coins: s.res.coins + gained.coins, supplies: s.res.supplies + gained.supplies, alloy: s.res.alloy + gained.alloy, actionPoints: ap, lunar: s.res.lunar + 5 },
+        log: [...s.log, { id: Date.now(), type: "collect", cycle: s.cycle + 1, text: `+${fmt(gained.coins)} coins · +${fmt(gained.supplies)} sup · +${fmt(gained.alloy)} alloy` }],
+      };
+    });
+  }
+
+  function skip() {
+    const n = Math.max(1, Math.min(999, parseInt(skipN) || 1));
+    setState((s) => {
+      const m = bandFor(s.euphoria).mult;
+      const gained = { coins: Math.round(s.rates.coins * m * n), supplies: Math.round(s.rates.supplies * m * n), alloy: Math.round(s.rates.alloy * m * n) };
+      const ap = Math.min(s.apCap, s.res.actionPoints + s.rates.actionPoints * n);
+      return {
+        ...s,
+        cycle: s.cycle + n,
+        res: { ...s.res, coins: s.res.coins + gained.coins, supplies: s.res.supplies + gained.supplies, alloy: s.res.alloy + gained.alloy, actionPoints: ap, lunar: s.res.lunar + 5 * n },
+        log: [...s.log, { id: Date.now(), type: "skip", cycle: s.cycle + n, text: `Skipped ${n} cycles · +${fmt(gained.coins)} coins · +${fmt(gained.supplies)} sup` }],
+      };
+    });
+  }
+
+  function reset() { setState(INITIAL_STATE); }
+
+  function produce(b, n) {
+    setState((s) => {
+      if (s.res.coins < b.costCoin * n || s.res.supplies < b.costSup * n) return s;
+      const goodsKey = b.good ? b.good.toLowerCase() : null;
+      const unitKey = b.unit ? UNIT_META.find((u) => b.unit.startsWith(u.label.split(" ")[0]))?.key : null;
+      const next = { ...s, res: { ...s.res, coins: s.res.coins - b.costCoin * n, supplies: s.res.supplies - b.costSup * n }, log: [...s.log, { id: Date.now(), type: b.good ? "produce" : "recruit", cycle: s.cycle, text: `${b.name} ×${n} → ${b.good || b.unit} (-${fmt(b.costCoin * n)} coins)` }] };
+      if (goodsKey && next.goods[goodsKey] !== undefined) next.goods = { ...next.goods, [goodsKey]: next.goods[goodsKey] + n };
+      if (unitKey) next.units = { ...next.units, [unitKey]: next.units[unitKey] + n };
+      return next;
+    });
+  }
+
+  function spend(kind, key, amt) {
+    setState((s) => {
+      const bag = kind === "goods" ? s.goods : s.units;
+      if ((bag[key] || 0) < amt) return s;
+      const meta = (kind === "goods" ? GOODS_META : UNIT_META).find((m) => m.key === key);
+      return { ...s, [kind]: { ...bag, [key]: bag[key] - amt }, log: [...s.log, { id: Date.now(), type: "spend", cycle: s.cycle, text: `Spent ${amt}× ${meta.label} on map` }] };
+    });
+  }
+
+  return (
+    <div className="qi" data-density={tweak.density} data-dark={tweak.dark ? "1" : "0"}>
+      <header className="qi-hdr">
+        <div className="qi-hdr-l">
+          <div className="qi-hdr-title"><IcBolt size={13} stroke={1.8} /><span>Simulation</span></div>
+          <div className="qi-hdr-cycle">
+            <span className="qi-hdr-cycle-n">{state.cycle}</span>
+            <span className="qi-hdr-cycle-l">cycle{state.cycle === 1 ? "" : "s"} · ≈{state.cycle * 10}h</span>
+          </div>
+        </div>
+        <button className="qi-icon-btn" title="Reset simulation" onClick={reset}><IcReset size={13} /></button>
+      </header>
+
+      <div className="qi-actions">
+        <button className="qi-btn qi-btn-primary" onClick={collect}>
+          <IcCheck size={13} stroke={2} /><span>Collect</span><span className="qi-btn-sub">+1 cycle</span>
+        </button>
+        <div className="qi-skip">
+          <button className="qi-btn qi-btn-ghost" onClick={skip} title="Skip N cycles"><IcSkip size={12} /><span>Skip</span></button>
+          <input type="number" className="qi-skip-n" value={skipN} min={1} max={999} onChange={(e) => setSkipN(e.target.value)} />
+          <span className="qi-skip-l">cycles</span>
+        </div>
+      </div>
+
+      <div className="qi-scroll">
+        <Section title="Stockpile" icon={IcSupply}>
+          <Vital icon={IcCoin}   label="QI Coins"     value={state.res.coins}        rate={Math.round(state.rates.coins * band.mult)}    color="amber" />
+          <Vital icon={IcSupply} label="QI Supplies"  value={state.res.supplies}     rate={Math.round(state.rates.supplies * band.mult)} color="indigo" />
+          <Vital icon={IcAlloy}  label="Chrono Alloy" value={state.res.alloy}        rate={Math.round(state.rates.alloy * band.mult)}    color="violet" />
+          <Vital icon={IcAction} label="Action Points" value={state.res.actionPoints} cap={state.apCap} rate={state.rates.actionPoints}   color="cyan" />
+          <div className="qi-vital-strip">
+            <ChipMini icon={IcShard} label="Shards" value={state.res.shards} />
+            <ChipMini icon={IcLunar} label="Lunar"  value={state.res.lunar} />
+          </div>
+        </Section>
+
+        <Section title="Euphoria" icon={IcSmile}>
+          <EuphoriaGauge value={state.euphoria} onChange={(v) => setState((s) => ({ ...s, euphoria: v }))} />
+        </Section>
+
+        <Section title="Combat & Inventory" icon={IcSword}>
+          <div className="qi-combat">
+            <div className="qi-combat-tile" data-tone="red"><IcSword size={14} /><div className="qi-combat-num">+{state.atkBoost}%</div><div className="qi-combat-lbl">Attack</div></div>
+            <div className="qi-combat-tile" data-tone="blue"><IcShield size={14} /><div className="qi-combat-num">+{state.defBoost}%</div><div className="qi-combat-lbl">Defense</div></div>
+          </div>
+          <div className="qi-chip-grid">{GOODS_META.map((g) => <InvChip key={g.key} icon={g.icon} label={g.label} value={state.goods[g.key]} />)}</div>
+          <div className="qi-chip-grid qi-chip-grid--units">{UNIT_META.map((u) => <InvChip key={u.key} icon={u.icon} label={u.label} value={state.units[u.key]} compact />)}</div>
+        </Section>
+
+        <Section title="Actions" icon={IcFactory}>
+          <div className="qi-tabs" role="tablist">
+            <button className={`qi-tab ${tab === "recruit" ? "is-active" : ""}`} onClick={() => setTab("recruit")}><IcHelmet size={12} />Recruit</button>
+            <button className={`qi-tab ${tab === "produce" ? "is-active" : ""}`} onClick={() => setTab("produce")}><IcFactory size={12} />Produce</button>
+            <button className={`qi-tab ${tab === "spend"   ? "is-active" : ""}`} onClick={() => setTab("spend")}><IcSend size={12} />Spend</button>
+          </div>
+          {tab === "recruit" && <div className="qi-act-list">{RECRUIT_BUILDINGS.map((b) => <BuildRow key={b.id} b={b} res={state.res} onAct={(n) => produce(b, n)} />)}</div>}
+          {tab === "produce" && <div className="qi-act-list">{PRODUCE_BUILDINGS.map((b) => <BuildRow key={b.id} b={b} res={state.res} onAct={(n) => produce(b, n)} />)}</div>}
+          {tab === "spend"   && <div className="qi-act-list"><SpendList state={state} onSpend={spend} /></div>}
+        </Section>
+
+        <Accordion title="Starting Resources" icon={IcSeedling} open={openSetup} onToggle={() => setOpenSetup((v) => !v)}>
+          <SetupForm state={state} setState={setState} />
+        </Accordion>
+
+        <Accordion title="External Boosts" icon={IcPlus} open={openBoosts} onToggle={() => setOpenBoosts((v) => !v)} hint="From guild bonuses or Great Buildings.">
+          <BoostsForm state={state} setState={setState} />
+        </Accordion>
+
+        <div className="qi-foot-pad" />
+      </div>
+
+      <LogDrawer open={logOpen} onToggle={() => setLogOpen((v) => !v)} entries={state.log} />
+    </div>
+  );
+}
+
+function Section({ title, icon: I, children }) {
+  return (
+    <section className="qi-sec">
+      <div className="qi-sec-hd"><I size={11} stroke={1.7} /><span>{title}</span></div>
+      <div className="qi-sec-body">{children}</div>
+    </section>
+  );
+}
+
+function Accordion({ title, icon: I, open, onToggle, hint, children }) {
+  return (
+    <section className="qi-acc" data-open={open ? "1" : "0"}>
+      <button className="qi-acc-hd" onClick={onToggle}>
+        <I size={11} stroke={1.7} />
+        <span className="qi-acc-title">{title}</span>
+        {hint && !open && <span className="qi-acc-hint">{hint}</span>}
+        <span className="qi-acc-chev">{open ? <IcChevU size={12} /> : <IcChevD size={12} />}</span>
+      </button>
+      {open && <div className="qi-acc-body">{children}</div>}
+    </section>
+  );
+}
+
+function Vital({ icon: I, label, value, rate, cap, color }) {
+  const pctFull = cap ? Math.min(1, value / cap) : 0;
+  return (
+    <div className={`qi-vital qi-vital--${color}`}>
+      <div className="qi-vital-icon"><I size={13} stroke={1.7} /></div>
+      <div className="qi-vital-mid">
+        <div className="qi-vital-label">{label}</div>
+        {rate !== undefined && rate !== 0 && <div className="qi-vital-rate">{fmtSigned(rate)}/cyc</div>}
+        {cap !== undefined && <div className="qi-vital-bar"><div className="qi-vital-bar-fill" style={{ width: `${pctFull * 100}%` }} /></div>}
+      </div>
+      <div className="qi-vital-val">{fmt(value)}{cap !== undefined && <span className="qi-vital-cap">/{fmt(cap)}</span>}</div>
+    </div>
+  );
+}
+
+function ChipMini({ icon: I, label, value }) {
+  return (
+    <div className="qi-cm"><I size={11} stroke={1.7} /><span className="qi-cm-l">{label}</span><span className="qi-cm-v">{fmt(value)}</span></div>
+  );
+}
+
+function InvChip({ icon: I, label, value, compact }) {
+  return (
+    <div className={`qi-ic ${value > 0 ? "is-have" : "is-empty"} ${compact ? "is-compact" : ""}`} title={label}>
+      <I size={12} stroke={1.7} />
+      <span className="qi-ic-l">{compact ? label.split(" ")[0].slice(0, 4) : label}</span>
+      <span className="qi-ic-v">{value}</span>
+    </div>
+  );
+}
+
+function EuphoriaGauge({ value, onChange }) {
+  const band = bandFor(value);
+  const pct = Math.max(0, Math.min(100, (value / 240) * 100));
+  return (
+    <div className="qi-eu">
+      <div className="qi-eu-head">
+        <div className={`qi-eu-pill qi-eu-pill--${band.tone}`}>{band.label} <span>·</span> <strong>×{band.mult.toFixed(1)}</strong></div>
+        <div className="qi-eu-num">
+          <input type="number" className="qi-eu-input" value={value} min={0} max={300}
+                 onChange={(e) => onChange(Math.max(0, Math.min(300, parseInt(e.target.value) || 0)))} />
+          <span>%</span>
+        </div>
+      </div>
+      <div className="qi-eu-track" onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const v = Math.round(((e.clientX - r.left) / r.width) * 240);
+        onChange(Math.max(0, Math.min(240, v)));
+      }}>
+        <div className="qi-eu-band qi-eu-band--neg"     style={{ left: 0,                      width: `${(20/240)*100}%` }} />
+        <div className="qi-eu-band qi-eu-band--warn"    style={{ left: `${(20/240)*100}%`,     width: `${(60/240)*100}%` }} />
+        <div className="qi-eu-band qi-eu-band--neutral" style={{ left: `${(80/240)*100}%`,     width: `${(40/240)*100}%` }} />
+        <div className="qi-eu-band qi-eu-band--pos"     style={{ left: `${(120/240)*100}%`,    width: `${(80/240)*100}%` }} />
+        <div className="qi-eu-band qi-eu-band--accent"  style={{ left: `${(200/240)*100}%`,    width: `${(40/240)*100}%` }} />
+        {[20, 60, 80, 120, 140, 200].map((t) => <div key={t} className="qi-eu-tick" style={{ left: `${(t/240)*100}%` }} />)}
+        <div className="qi-eu-thumb" style={{ left: `${pct}%` }} />
+      </div>
+      <div className="qi-eu-hint">Affects coins &amp; supplies from residential + production buildings. Not Town Hall.</div>
+    </div>
+  );
+}
+
+function BuildRow({ b, res, onAct }) {
+  const I = b.icon;
+  return (
+    <div className="qi-br">
+      <div className="qi-br-l">
+        <I size={13} stroke={1.7} />
+        <div className="qi-br-info">
+          <div className="qi-br-name">{b.name}{b.count > 1 && <span className="qi-br-count">×{b.count}</span>}</div>
+          <div className="qi-br-sub">{b.unit || b.good} · {fmt(b.costCoin)} <IcCoin size={9} /> · {fmt(b.costSup)} <IcSupply size={9} /></div>
+        </div>
+      </div>
+      <div className="qi-br-btns">
+        {b.batches.map((n) => {
+          const poor = res.coins < b.costCoin * n || res.supplies < b.costSup * n;
+          return <button key={n} className={`qi-batch ${poor ? "is-poor" : ""}`} disabled={poor} onClick={() => onAct(n)} title={`Costs ${fmt(b.costCoin * n)} coins, ${fmt(b.costSup * n)} supplies`}>×{n}</button>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SpendList({ state, onSpend }) {
+  const [amts, setAmts] = React.useState({});
+  const goodsRows = GOODS_META.filter((g) => state.goods[g.key] > 0);
+  const unitRows  = UNIT_META.filter((u) => state.units[u.key] > 0);
+  if (goodsRows.length === 0 && unitRows.length === 0) return <div className="qi-empty">Nothing to spend. Produce or recruit first.</div>;
+  function row(kind, m, have) {
+    const I = m.icon;
+    const a = parseInt(amts[`${kind}:${m.key}`]) || 1;
+    return (
+      <div className="qi-sr" key={`${kind}:${m.key}`}>
+        <I size={12} stroke={1.7} />
+        <span className="qi-sr-l">{m.label}</span>
+        <span className="qi-sr-have">{have}</span>
+        <input type="number" className="qi-sr-n" min={1} max={have} value={a} onChange={(e) => setAmts({ ...amts, [`${kind}:${m.key}`]: e.target.value })} />
+        <button className="qi-sr-btn" onClick={() => onSpend(kind, m.key, Math.min(have, Math.max(1, a)))}><IcSend size={10} />Spend</button>
+      </div>
+    );
+  }
+  return (
+    <div className="qi-sr-list">
+      {goodsRows.length > 0 && <div className="qi-sr-hd">Goods</div>}
+      {goodsRows.map((g) => row("goods", g, state.goods[g.key]))}
+      {unitRows.length > 0 && <div className="qi-sr-hd">Units</div>}
+      {unitRows.map((u) => row("units", u, state.units[u.key]))}
+    </div>
+  );
+}
+
+function SetupForm({ state, setState }) {
+  const [draft, setDraft] = React.useState({ ...state.res });
+  const fields = [
+    { key: "coins",        label: "QI Coins",       I: IcCoin   },
+    { key: "supplies",     label: "QI Supplies",    I: IcSupply },
+    { key: "alloy",        label: "Chrono Alloy",   I: IcAlloy  },
+    { key: "actionPoints", label: "Action Points",  I: IcAction },
+    { key: "shards",       label: "Quantum Shards", I: IcShard  },
+    { key: "lunar",        label: "Lunar Coins",    I: IcLunar  },
+  ];
+  return (
+    <div className="qi-form">
+      {fields.map(({ key, label, I }) => (
+        <div className="qi-fld" key={key}>
+          <span className="qi-fld-l"><I size={11} stroke={1.7} />{label}</span>
+          <input type="number" className="qi-fld-i" value={draft[key]} onChange={(e) => setDraft({ ...draft, [key]: parseInt(e.target.value) || 0 })} />
+        </div>
+      ))}
+      <button className="qi-btn qi-btn-ghost qi-form-apply" onClick={() => setState((s) => ({ ...s, res: { ...s.res, ...draft } }))}>Apply starting resources</button>
+    </div>
+  );
+}
+
+function BoostsForm({ state, setState }) {
+  const fields = [
+    { key: "coinsBoost",    label: "Coins",   I: IcCoin   },
+    { key: "suppliesBoost", label: "Supplies",I: IcSupply },
+    { key: "atkBoost",      label: "Attack",  I: IcSword  },
+    { key: "defBoost",      label: "Defense", I: IcShield },
+  ];
+  return (
+    <div className="qi-form">
+      {fields.map(({ key, label, I }) => (
+        <div className="qi-fld" key={key}>
+          <span className="qi-fld-l"><I size={11} stroke={1.7} />{label}</span>
+          <div className="qi-fld-pct">
+            <input type="number" className="qi-fld-i" value={state[key] || 0} onChange={(e) => setState((s) => ({ ...s, [key]: parseInt(e.target.value) || 0 }))} />
+            <span>%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LogDrawer({ open, onToggle, entries }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => { if (open && ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [open, entries.length]);
+  const recent = entries.slice(-3).reverse();
+  return (
+    <div className={`qi-log ${open ? "is-open" : ""}`}>
+      <button className="qi-log-hd" onClick={onToggle}>
+        <IcList size={12} stroke={1.7} />
+        <span className="qi-log-hd-l">Activity Log</span>
+        <span className="qi-log-hd-c">{entries.length}</span>
+        {open ? <IcChevD size={12} /> : <IcChevU size={12} />}
+      </button>
+      {!open && (
+        <div className="qi-log-peek">
+          {recent[0] && <span><em>c{recent[0].cycle}</em> {recent[0].text}</span>}
+        </div>
+      )}
+      {open && (
+        <div className="qi-log-body" ref={ref}>
+          {entries.length === 0 && <div className="qi-empty">No events yet.</div>}
+          {entries.map((e) => (
+            <div key={e.id} className={`qi-log-row qi-log-row--${e.type}`}>
+              <span className="qi-log-c">c{e.cycle}</span>
+              <span className="qi-log-t">{e.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+window.QIPanel = QIPanel;
+</script>
+
+<!-- context.jsx -->
+<script type="text/babel">
+function AppContext({ children }) {
+  return (
+    <div className="ctx">
+      <div className="ctx-fade">
+        <header className="ctx-tabs">
+          <div className="ctx-tab">Main City</div>
+          <div className="ctx-tab">Settlement</div>
+          <div className="ctx-tab">Colony</div>
+          <div className="ctx-tab is-active">⚡ Quantum</div>
+          <div className="ctx-tab-spacer" />
+          <div className="ctx-lang">EN English</div>
+        </header>
+        <aside className="ctx-side">
+          <div className="ctx-side-title"><span>Banyek City Planner</span><span className="ctx-side-mode">🌙</span></div>
+          <div className="ctx-side-card"><div className="ctx-side-card-hd">⬇ Import</div><div className="ctx-side-card-btn">Import from FoE Helper</div></div>
+          <div className="ctx-side-btn ctx-side-btn--primary">Production Overview</div>
+          <div className="ctx-side-btn">▶ Save / Export</div>
+          <div className="ctx-side-btn">▼ Build</div>
+          <div className="ctx-side-sub">+ Road</div>
+          <div className="ctx-side-sub">+ Wide Road</div>
+          <div className="ctx-side-sub">+ Expansion</div>
+          <div className="ctx-side-sub">+ Custom Building</div>
+          <div className="ctx-side-btn">▼ Buildings</div>
+          <div className="ctx-side-search">Search buildings…</div>
+          <div className="ctx-side-cats"><span className="is-active">All</span><span>Res</span><span>Prod</span><span>Goods</span><span>Cult</span><span>Mil</span><span>GB</span><span>Event</span></div>
+          <div className="ctx-side-group">▼ Residential <span>(9)</span></div>
+          <div className="ctx-side-blist">
+            <div className="ctx-side-bi">Deszkaburkolatú ház <span>2×2</span></div>
+            <div className="ctx-side-bi">Favázas épület <span>2×2</span></div>
+            <div className="ctx-side-bi is-sel">Kúria <span>2×2</span></div>
+            <div className="ctx-side-bi">Többemeletes ház <span>2×2</span></div>
+            <div className="ctx-side-bi">Többlakásos ház <span>2×2</span></div>
+          </div>
+        </aside>
+        <div className="ctx-toolbar">
+          <span className="ctx-tb-l">Grid Size:</span>
+          <input className="ctx-tb-inp" value="12" readOnly />
+          <span>×</span>
+          <input className="ctx-tb-inp" value="16" readOnly />
+          <div className="ctx-tb-sp" />
+          <button className="ctx-tb-btn">− Zoom</button>
+          <button className="ctx-tb-btn">⌖ Reset</button>
+          <button className="ctx-tb-btn">↶ Undo</button>
+          <button className="ctx-tb-btn">↷ Redo</button>
+        </div>
+        <main className="ctx-canvas">
+          <div className="ctx-grid" />
+          <div className="ctx-toast">🏠 Placing: Kúria 2×2 — Click to place · ESC to exit</div>
+          <div className="ctx-bld ctx-bld--th"  style={{ left: 70,  top: 50,  width: 200, height: 200 }}><span>Városháza</span></div>
+          <div className="ctx-bld ctx-bld--res" style={{ left: 130, top: 320, width: 80,  height: 80  }}><span>Kúria</span></div>
+          <div className="ctx-bld ctx-bld--res" style={{ left: 260, top: 320, width: 80,  height: 80  }}><span>Kúria</span></div>
+          <div className="ctx-bld ctx-bld--ghost" style={{ left: -20, top: 460, width: 40, height: 40 }} />
+        </main>
+      </div>
+      <div className="ctx-panel-slot">{children}</div>
+    </div>
+  );
+}
+window.AppContext = AppContext;
+</script>
+
+<!-- app.jsx -->
+<script type="text/babel">
+const TWEAK_DEFAULTS = {
+  "accent": "#5b5fe5",
+  "density": "regular",
+  "dark": false,
+  "showContext": true
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  React.useEffect(() => {
+    document.documentElement.style.setProperty("--qi-accent-override", t.accent);
+  }, [t.accent]);
+
+  const panel = <QIPanel tweak={t} />;
+
+  return (
+    <div className={`stage ${t.dark ? "is-dark" : ""}`} data-context={t.showContext ? "1" : "0"}>
+      <style>{`
+        :root { --qi-accent-override: ${t.accent}; }
+        .qi { --qi-accent: var(--qi-accent-override); }
+        .qi { --qi-accent-2: color-mix(in oklab, var(--qi-accent-override) 88%, black); }
+        .qi { --qi-accent-soft: color-mix(in oklab, var(--qi-accent-override) 14%, white); }
+        .qi[data-dark="1"] { --qi-accent-soft: color-mix(in oklab, var(--qi-accent-override) 22%, black); }
+      `}</style>
+
+      {t.showContext ? <AppContext>{panel}</AppContext> : <div className="solo">{panel}</div>}
+
+      <TweaksPanel>
+        <TweakSection label="Accent" />
+        <TweakColor label="Color" value={t.accent} options={["#5b5fe5", "#1f8a5b", "#c0561d", "#0f172a"]} onChange={(v) => setTweak("accent", v)} />
+        <TweakSection label="Layout" />
+        <TweakRadio label="Density" value={t.density} options={["compact", "regular", "comfy"]} onChange={(v) => setTweak("density", v)} />
+        <TweakToggle label="Show app context" value={t.showContext} onChange={(v) => setTweak("showContext", v)} />
+        <TweakToggle label="Dark mode" value={t.dark} onChange={(v) => setTweak("dark", v)} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+</body>
+</html>

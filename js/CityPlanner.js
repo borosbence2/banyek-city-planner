@@ -9,6 +9,7 @@ import { FoeImporter }        from './FoeImporter.js';
 import { Optimizer }          from './Optimizer.js';
 import { UndoHistory }        from './UndoHistory.js';
 import { ProductionOverview } from './ProductionOverview.js';
+import { QISimulator }        from './QISimulator.js';
 import { BUILDINGS }          from '../data/foe_buildings_database.js';
 import { QI_BUILDINGS }       from '../data/qi_buildings_database.js';
 import { SETTLEMENT_BUILDINGS } from '../data/settlement_buildings_database.js';
@@ -96,6 +97,7 @@ export class CityPlanner {
         this.optimizer        = new Optimizer(this);
         this.undoHistory      = new UndoHistory(this);
         this.productionOverview = new ProductionOverview(this);
+        this.qiSimulator        = new QISimulator(this);
 
         this._placeDefaultTownhall();
         this.events.setup();
@@ -119,6 +121,7 @@ export class CityPlanner {
             this.updatePoolPanel();
             this.updateSettlementTypePicker();
             this.updateColonyTypePicker();
+            if (this.activeCityType === 'quantum') this.updateQISimUI();
         });
 
         if (!localStorage.getItem('foe_visited')) {
@@ -306,6 +309,14 @@ export class CityPlanner {
         document.getElementById('status').textContent = text;
     }
 
+    showToast(msg, duration = 2500) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('toast-visible');
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => el.classList.remove('toast-visible'), duration);
+    }
+
     showModal(id) { document.getElementById(id).classList.add('active'); }
     hideModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -417,12 +428,17 @@ export class CityPlanner {
     placeBuilding(gridPos) {
         const { id, width, height, name, color, type, age, needsRoad = 1, boosts, prod } = this.selectedTemplate;
         if (this.canPlaceBuilding(gridPos.x, gridPos.y, width, height)) {
+            if (this.activeCityType === 'quantum' && this.qiSimulator.enabled && !this.qiSimulator.canAffordBuilding({ id })) {
+                this.showToast(t('qiSim.cantAffordBuilding', { name }));
+                return;
+            }
             this.captureSnapshot();
             const entry = { id, x: gridPos.x, y: gridPos.y, width, height, name, color, type, age, needsRoad };
             if (boosts && boosts.length > 0) entry.boosts = boosts;
             if (prod) entry.prod = prod;
             this.buildings.push(entry);
             this.renderer.triggerPlaceAnimation(entry);
+            if (this.activeCityType === 'quantum') this.qiSimulator.logBuildingPlaced(entry);
 
             // Townhall: exit placement after one (only one allowed)
             if (this.isTownhall(this.selectedTemplate)) {
@@ -434,6 +450,7 @@ export class CityPlanner {
 
             this.renderer.draw();
             this.importer.updateCityInfoPanel();
+            if (this.activeCityType === 'quantum' && this.qiSimulator.enabled) this.updateQISimUI();
         }
     }
 
@@ -545,6 +562,9 @@ export class CityPlanner {
     // BUILDING POOL
     // ========================================
     moveToPool(building) {
+        if (this.activeCityType === 'quantum' && !this.isTownhall(building)) {
+            this.qiSimulator.logBuildingRemoved(building);
+        }
         this.buildings = this.buildings.filter(b => b !== building);
         this.buildingPool.push(building);
         if (this.selectedBuilding === building) this.selectedBuilding = null;
@@ -552,6 +572,7 @@ export class CityPlanner {
         this.updatePoolPanel();
         this.renderer.draw();
         this.importer.updateCityInfoPanel();
+        if (this.activeCityType === 'quantum' && this.qiSimulator.enabled) this.updateQISimUI();
     }
 
     updatePoolPanel() {
@@ -814,6 +835,15 @@ export class CityPlanner {
         // Don't place a duplicate at the same position
         if (this.unlockedAreas.some(a => a.x === x && a.y === y)) return;
 
+        // QI sim: charge expansion goods cost before committing the placement
+        if (this.activeCityType === 'quantum' && this.qiSimulator?.enabled) {
+            const buyResult = this.qiSimulator.buyGoodsExpansion();
+            if (!buyResult.success) {
+                this.showToast(t('qiSim.cantAffordExpansion'));
+                return;
+            }
+        }
+
         this.captureSnapshot();
         const nextIndex = this.unlockedAreas.filter(a => !a.autoTiled).length;
         this.unlockedAreas.push({ x, y, width: EXPANSION_SIZE, length: EXPANSION_SIZE, manual: true });
@@ -821,10 +851,13 @@ export class CityPlanner {
         this.resizeCanvas();
         this.updateStatus(t('status.expansionPlaced', { num: nextIndex + 1 }));
         this.renderer.draw();
+        if (this.activeCityType === 'quantum' && this.qiSimulator?.enabled) this.updateQISimUI();
     }
 
     /** Remove a manual expansion block, moving any overlapping buildings to the pool. */
     removeExpansion(area) {
+        const refundQI = this.activeCityType === 'quantum' && this.qiSimulator?.enabled
+            && area.manual && !area.autoTiled;
         this.captureSnapshot();
         const S = 4; // EXPANSION_SIZE
         // Find buildings that intersect this 4×4 block
@@ -854,6 +887,10 @@ export class CityPlanner {
             : t('status.expansionRemoved');
         this.updateStatus(msg);
         setTimeout(() => this.updateStatus(t('status.selectMove')), 2500);
+        if (refundQI) {
+            this.qiSimulator.refundExpansion();
+            this.updateQISimUI();
+        }
     }
 
     fitGridToContent() {
@@ -1846,6 +1883,89 @@ export class CityPlanner {
         this.updateStatus(t('status.pdfExported'));
     }
 
+    exportQIPlan() {
+        track('export-qi-plan', 'Export QI Plan PDF');
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) { alert(t('alert.pdfNotLoaded')); return; }
+
+        const sim = this.qiSimulator;
+        const pdfSafe = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '');
+        const dateStr = new Date().toISOString().slice(0, 10);
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const PM = 12, PW = 210, PH = 297;
+        let py = PM + 6;
+
+        // Title
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pdfSafe(t('qiSim.planTitle')), PM, py);
+        py += 6;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${pdfSafe(t('qiSim.cycleLabel'))} ${sim.cycle}   ·   ${dateStr}`, PM, py);
+        py += 8;
+
+        // Development log
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pdfSafe(t('qiSim.devLog')), PM, py);
+        py += 5;
+
+        const typeLabels = {
+            start:        pdfSafe(t('qiSim.logStart')),
+            place:        (e) => pdfSafe(t('qiSim.logPlace',       { name: e.data.buildingName })),
+            remove:       (e) => pdfSafe(t('qiSim.logRemove',      { name: e.data.buildingName })),
+            collect:      (e) => pdfSafe(t('qiSim.logCollect',     { summary: sim._deltaSummary(e.data.deltas) })),
+            fast_forward: (e) => pdfSafe(t('qiSim.logFastForward', { n: e.data.n, summary: sim._deltaSummary(e.data.deltas) })),
+        };
+        const icons = { start: '>', place: '+', remove: '-', collect: 'C', fast_forward: '>>' };
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+
+        for (const entry of sim.log) {
+            if (py > PH - PM - 6) { doc.addPage(); py = PM + 6; }
+            const icon = icons[entry.type] || '•';
+            const label = typeof typeLabels[entry.type] === 'function'
+                ? typeLabels[entry.type](entry)
+                : (typeLabels[entry.type] || entry.type);
+            const line = `[${pdfSafe(t('qiSim.cycle'))} ${entry.cycle}]  ${icon}  ${label}`;
+            const wrapped = doc.splitTextToSize(line, PW - PM * 2);
+            doc.text(wrapped, PM, py);
+            py += wrapped.length * 4.5 + 1;
+        }
+
+        // Final stockpile
+        if (py > PH - PM - 40) { doc.addPage(); py = PM + 6; }
+        py += 4;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pdfSafe(t('qiSim.finalStockpile')), PM, py);
+        py += 5;
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        const QI_RES_LABELS = {
+            guild_raids_supplies: 'QI Supplies', guild_raids_money: 'QI Coins',
+            guild_raids_chrono_alloy: 'Chrono Alloy', guild_raids_action_points: 'Action Points',
+            guild_raids_honey: 'Honey', guild_raids_bronze: 'Bronze', guild_raids_brick: 'Brick',
+            guild_raids_rope: 'Rope', guild_raids_ebony: 'Ebony', guild_raids_gems: 'Gems',
+            guild_raids_lead: 'Lead', guild_raids_limestone: 'Limestone',
+            guild_raids_cloth: 'Cloth', guild_raids_gunpowder: 'Gunpowder',
+        };
+        for (const [key, label] of Object.entries(QI_RES_LABELS)) {
+            const amount = sim.resources[key] || 0;
+            if (amount === 0) continue;
+            doc.text(`${label}: ${Math.round(amount).toLocaleString()}`, PM + 4, py);
+            py += 4.5;
+        }
+
+        doc.save(`qi-development-plan-${dateStr}.pdf`);
+        this.updateStatus(t('qiSim.planExported'));
+    }
+
     showLoadModal() {
         document.getElementById('modalTitle').textContent       = t('loadModal.title');
         document.getElementById('modalInstructions').textContent = t('loadModal.instructions');
@@ -2245,7 +2365,7 @@ export class CityPlanner {
 
     /** Capture current city state into a plain serialisable object. */
     getSnapshot() {
-        return {
+        const snap = {
             buildings:     JSON.parse(JSON.stringify(this.buildings)),
             roads:         Array.from(this.roads),
             wideRoads:     Array.from(this.wideRoads),
@@ -2255,6 +2375,10 @@ export class CityPlanner {
             gridHeight:    this.gridHeight,
             cityMetadata:  this.cityMetadata ? { ...this.cityMetadata } : null,
         };
+        if (this.activeCityType === 'quantum') {
+            snap.qiSimulator = this.qiSimulator.getSnapshot();
+        }
+        return snap;
     }
 
     /** Restore city state from a snapshot (or reset to empty if snap is null). */
@@ -2286,6 +2410,20 @@ export class CityPlanner {
         this.updateBuildingList();
         this.updatePoolPanel();
         this.importer.updateCityInfoPanel();
+        if (this.activeCityType === 'quantum') {
+            if (snap && snap.qiSimulator) {
+                this.qiSimulator.loadSnapshot(snap.qiSimulator);
+            } else {
+                // Fresh quantum city — reset run-state; startingResources keeps constructor defaults
+                this.qiSimulator.enabled = false;
+                this.qiSimulator.cycle = 0;
+                this.qiSimulator.resources = {};
+                this.qiSimulator.log = [];
+                this.qiSimulator.externalBoostOverrides = {};
+                this.qiSimulator.useBoostOverrides = {};
+            }
+            this.updateQISimUI();
+        }
         this.renderer.draw();
     }
 
@@ -2325,7 +2463,13 @@ export class CityPlanner {
         if (this.buildings.some(b => this.isTownhall(b))) return;
         let entry;
         if (this.activeCityType === 'quantum') {
-            entry = Object.entries(this.buildingTemplates).find(([, t]) => t.type === 'main_building');
+            // Prefer the Middle Ages Town Hall (active era); fall back to any main_building.
+            const MA_TH_ID = 'H_GuildRaidsEarlyMiddleAge_Townhall';
+            if (this.buildingTemplates[MA_TH_ID]) {
+                entry = [MA_TH_ID, this.buildingTemplates[MA_TH_ID]];
+            } else {
+                entry = Object.entries(this.buildingTemplates).find(([, t]) => t.type === 'main_building');
+            }
         } else if (this.activeCityType === 'settlement') {
             const st = SETTLEMENT_TYPES.find(s => s.id === this.activeSettlementType);
             if (st) entry = [st.embassyId, this.buildingTemplates[st.embassyId]];
@@ -2420,6 +2564,7 @@ export class CityPlanner {
 
         this.updateSettlementTypePicker();
         this.updateColonyTypePicker();
+        this.updateQISimVisibility();
     }
 
     /** Render the settlement type picker and update its active state. */
@@ -2511,6 +2656,99 @@ export class CityPlanner {
         const note = document.getElementById('colonyNote');
         if (note && ct) {
             note.textContent = ct.hasRoads ? '🛤 Roads required' : '✦ No roads needed';
+        }
+    }
+
+    /** Show or hide the QI toggle button and right panel based on active tab. */
+    updateQISimVisibility() {
+        const section = document.getElementById('qiSimSection');
+        if (section) section.style.display = this.activeCityType === 'quantum' ? '' : 'none';
+        this.updateQISimUI();
+    }
+
+    /** Re-render the QI simulation right panel to reflect current state. */
+    updateQISimUI() {
+        const sim = this.qiSimulator;
+        const isQI = this.activeCityType === 'quantum';
+
+        // Sidebar toggle button
+        const toggleBtn = document.getElementById('qiSimToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.textContent = sim.enabled
+                ? '⏹ ' + t('qiSim.disable')
+                : '▶ ' + t('qiSim.enable');
+            toggleBtn.classList.toggle('danger', sim.enabled);
+        }
+
+        // Right panel visibility — show when QI tab active + sim enabled
+        const rightPanel = document.getElementById('qiSimRightPanel');
+        const poolPanel  = document.getElementById('poolPanel');
+        const container  = document.querySelector('.container');
+        const show = isQI && sim.enabled;
+
+        if (rightPanel) rightPanel.style.display = show ? '' : 'none';
+        if (poolPanel)  poolPanel.style.display  = show ? 'none' : '';
+        if (container)  container.classList.toggle('qi-sim-open', show);
+
+        if (!show) return;
+
+        // Cycle counter + hint
+        const cycleEl = document.getElementById('qiSimCycleNum');
+        if (cycleEl) cycleEl.textContent = sim.cycle;
+        const hintEl = document.getElementById('qiSimCycleHint');
+        if (hintEl) hintEl.textContent = `cycles · ≈${sim.cycle * 10}h`;
+
+        // Stockpile
+        const stockpileEl = document.getElementById('qiSimStockpile');
+        if (stockpileEl) stockpileEl.innerHTML = sim.renderStockpileHTML();
+
+        // Euphoria
+        const euphoriaEl = document.getElementById('qiSimEuphoria');
+        if (euphoriaEl) euphoriaEl.innerHTML = sim.renderEuphoriaHTML();
+
+        // Combat boosts + inventory chips
+        const combatEl = document.getElementById('qiSimCombatBoosts');
+        if (combatEl) combatEl.innerHTML = sim.renderCombatBoostHTML();
+        const inventoryEl = document.getElementById('qiSimInventory');
+        if (inventoryEl) inventoryEl.innerHTML = sim.renderInventoryHTML();
+
+        // Tab content — render the active tab
+        const activeTab = this._qiActiveTab || 'recruit';
+        const tabContent = document.getElementById('qiSimTabContent');
+        if (tabContent) {
+            if (activeTab === 'recruit')      tabContent.innerHTML = sim.renderMilitaryRecruitHTML();
+            else if (activeTab === 'produce') tabContent.innerHTML = sim.renderGoodsProductionHTML();
+            else if (activeTab === 'spend')   tabContent.innerHTML = sim.renderSpendResourcesHTML();
+            else if (activeTab === 'expand')  tabContent.innerHTML = `<div class="qi-sr-list">${sim.renderExpansionsHTML()}</div>`;
+        }
+
+        // Starting resources & external boosts
+        const startingEl = document.getElementById('qiSimStartingResources');
+        if (startingEl) startingEl.innerHTML = sim.renderStartingResourcesHTML();
+        const boostsEl = document.getElementById('qiSimExternalBoosts');
+        if (boostsEl) boostsEl.innerHTML = sim.renderExternalBoostsHTML();
+
+        // Log count badge + log body
+        const logCountEl = document.getElementById('qiSimLogCount');
+        if (logCountEl) logCountEl.textContent = sim.log.length;
+
+        const logEl = document.getElementById('qiSimLog');
+        if (logEl) {
+            logEl.innerHTML = sim.renderLogHTML();
+            if (logEl.style.display !== 'none') {
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+        }
+
+        // Log peek — show latest entry
+        const peekEl = document.getElementById('qiSimLogPeek');
+        if (peekEl) {
+            const last = sim.log[sim.log.length - 1];
+            if (last) {
+                const peekText = sim.renderLogEntryText(last);
+                peekEl.innerHTML = `<em>c${last.cycle}</em> ${peekText}`;
+                peekEl.style.display = '';
+            }
         }
     }
 }

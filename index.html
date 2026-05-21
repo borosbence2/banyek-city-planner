@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" href="assets/rang.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -189,6 +189,10 @@
                 </div><!-- /.section-content -->
             </div>
 
+            <!-- QI Simulation toggle — visible only in quantum tab -->
+            <div id="qiSimSection" style="display:none;">
+                <button class="btn qi-sim-toggle-btn" id="qiSimToggleBtn" data-i18n="qiSim.enable">▶ Enable Simulation</button>
+            </div>
 
         </div>
 
@@ -218,6 +222,152 @@
             </div>
             <div class="pool-hint" data-i18n="pool.hint">Drag buildings off the grid to store them here. Click to place back.</div>
             <div class="pool-list" id="poolList"></div>
+        </div>
+
+        <!-- QI Simulation right panel — takes column 3 when active -->
+        <div id="qiSimRightPanel" class="qi" style="display:none;">
+            <!-- Header -->
+            <header class="qi-hdr">
+                <div class="qi-hdr-l">
+                    <div class="qi-hdr-title">
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;color:var(--qi-accent)"><path d="m9 1.5-6 8h4l-1 5 6-8H8z"/></svg>
+                        <span data-i18n="qiSim.panelTitle">Simulation</span>
+                    </div>
+                    <div class="qi-hdr-cycle">
+                        <span class="qi-hdr-cycle-n" id="qiSimCycleNum">0</span>
+                        <span class="qi-hdr-cycle-l" id="qiSimCycleHint">cycles · ≈0h</span>
+                    </div>
+                </div>
+                <button class="qi-icon-btn" id="qiResetBtn" data-i18n-title="qiSim.reset">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13.2 2.5V5h-2.5"/></svg>
+                </button>
+            </header>
+
+            <!-- Primary actions -->
+            <div class="qi-actions">
+                <button class="qi-btn qi-btn-primary" id="qiCollectBtn">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 8 3.5 3.5L13 5"/></svg>
+                    <span data-i18n="qiSim.collectBtn">Collect</span>
+                    <span class="qi-btn-sub">+1 cycle · +10 h</span>
+                </button>
+                <div class="qi-skip">
+                    <button class="qi-btn qi-btn-ghost" id="qiFastForwardBtn">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" stroke="none" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M3 3 8 8l-5 5zM8 3l5 5-5 5z"/></svg>
+                        <span data-i18n="qiSim.skipBtn">Skip</span>
+                    </button>
+                    <input type="number" id="qiFastForwardN" class="qi-skip-n" min="1" max="9999" value="10">
+                    <span class="qi-skip-l" data-i18n="qiSim.cyclesLabel">cycles</span>
+                </div>
+            </div>
+
+            <!-- Scrollable body -->
+            <div class="qi-scroll">
+
+                <!-- Stockpile -->
+                <section class="qi-sec">
+                    <div class="qi-sec-hd">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M2.5 5.5 8 2.7l5.5 2.8v5L8 13.3l-5.5-2.8z"/><path d="M2.5 5.5 8 8.3l5.5-2.8"/><path d="M8 8.3v5"/></svg>
+                        <span data-i18n="qiSim.stockpile">Stockpile</span>
+                    </div>
+                    <div class="qi-sec-body" id="qiSimStockpile"></div>
+                </section>
+
+                <!-- Euphoria -->
+                <section class="qi-sec">
+                    <div class="qi-sec-hd">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><circle cx="8" cy="8" r="5.8"/><path d="M5.5 9.5c.7 1 1.5 1.5 2.5 1.5s1.8-.5 2.5-1.5"/><circle cx="6" cy="6.8" r=".5" fill="currentColor" stroke="none"/><circle cx="10" cy="6.8" r=".5" fill="currentColor" stroke="none"/></svg>
+                        <span data-i18n="qiSim.euphoria">Euphoria</span>
+                    </div>
+                    <div class="qi-sec-body" id="qiSimEuphoria"></div>
+                </section>
+
+                <!-- Combat & Inventory -->
+                <section class="qi-sec">
+                    <div class="qi-sec-hd">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m13.5 2.5-7 7"/><path d="m9 6 1 1"/><path d="m2.5 13.5 2.5-2.5 1-3 3-1L13 2"/><path d="m5 11 .8.8"/></svg>
+                        <span data-i18n="qiSim.combatInventory">Combat &amp; Inventory</span>
+                    </div>
+                    <div class="qi-sec-body">
+                        <div id="qiSimCombatBoosts"></div>
+                        <div id="qiSimInventory"></div>
+                    </div>
+                </section>
+
+                <!-- Actions -->
+                <section class="qi-sec">
+                    <div class="qi-sec-hd">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M2 13V7l3 1.5V7l3 1.5V7l3 1.5V5h2v8z"/><path d="M2 13h12"/></svg>
+                        <span data-i18n="qiSim.actions">Actions</span>
+                    </div>
+                    <div class="qi-sec-body">
+                        <div class="qi-tabs" role="tablist">
+                            <button class="qi-tab is-active" data-qi-tab="recruit">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M3 8a5 5 0 0 1 10 0v3H3z"/><path d="M3 11h10"/><path d="M8 4.5V11"/></svg>
+                                <span data-i18n="qiSim.tabRecruit">Recruit</span>
+                            </button>
+                            <button class="qi-tab" data-qi-tab="produce">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M2 13V7l3 1.5V7l3 1.5V7l3 1.5V5h2v8z"/><path d="M2 13h12"/></svg>
+                                <span data-i18n="qiSim.tabProduce">Produce</span>
+                            </button>
+                            <button class="qi-tab" data-qi-tab="spend">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m2 8 12-5-5 12-2-5z"/></svg>
+                                <span data-i18n="qiSim.tabSpend">Spend</span>
+                            </button>
+                            <button class="qi-tab" data-qi-tab="expand">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+                                <span data-i18n="qiSim.tabExpand">Expand</span>
+                            </button>
+                        </div>
+                        <div class="qi-act-list" id="qiSimTabContent"></div>
+                    </div>
+                </section>
+
+                <!-- Starting Resources accordion -->
+                <section class="qi-acc" id="qiAccSetup" data-open="0">
+                    <button class="qi-acc-hd" data-qi-accordion="qiAccSetup">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M8 13v-4"/><path d="M8 9a4 4 0 0 0-4-4H2.5a4 4 0 0 0 4 4z"/><path d="M8 9a4 4 0 0 1 4-4h1.5a4 4 0 0 1-4 4z"/></svg>
+                        <span class="qi-acc-title" data-i18n="qiSim.startingResources">Starting Resources</span>
+                        <span class="qi-acc-chev">
+                            <svg class="qi-chev-d" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 6 5 4 5-4"/></svg>
+                            <svg class="qi-chev-u" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 10 5-4 5 4"/></svg>
+                        </span>
+                    </button>
+                    <div class="qi-acc-body" id="qiAccSetupBody" style="display:none">
+                        <div class="qi-form" id="qiSimStartingResources"></div>
+                        <button class="qi-btn qi-btn-ghost qi-form-apply" id="qiSimApplyBonus" data-i18n="qiSim.applyBonus">Apply Starting Resources</button>
+                    </div>
+                </section>
+
+                <!-- External Boosts accordion -->
+                <section class="qi-acc" id="qiAccBoosts" data-open="0">
+                    <button class="qi-acc-hd" data-qi-accordion="qiAccBoosts">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M8 3v10M3 8h10"/></svg>
+                        <span class="qi-acc-title" data-i18n="qiSim.externalBoosts">External Boosts</span>
+                        <span class="qi-acc-hint" data-i18n="qiSim.externalBoostsHint">From guild bonuses or Great Buildings.</span>
+                        <span class="qi-acc-chev">
+                            <svg class="qi-chev-d" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 6 5 4 5-4"/></svg>
+                            <svg class="qi-chev-u" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 10 5-4 5 4"/></svg>
+                        </span>
+                    </button>
+                    <div class="qi-acc-body" id="qiAccBoostsBody" style="display:none">
+                        <div class="qi-form" id="qiSimExternalBoosts"></div>
+                    </div>
+                </section>
+
+                <div class="qi-foot-pad"></div>
+            </div>
+
+            <!-- Log drawer (pull-up) -->
+            <div class="qi-log" id="qiSimLogDrawer">
+                <button class="qi-log-hd" id="qiSimLogToggle">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="M3 4h10M3 8h10M3 12h6"/></svg>
+                    <span class="qi-log-hd-l" data-i18n="qiSim.devLog">Activity Log</span>
+                    <span class="qi-log-hd-c" id="qiSimLogCount">0</span>
+                    <svg class="qi-log-chev" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block"><path d="m3 10 5-4 5 4"/></svg>
+                </button>
+                <div class="qi-log-peek" id="qiSimLogPeek"></div>
+                <div class="qi-log-body" id="qiSimLog" style="display:none"></div>
+            </div>
         </div>
 
         <div id="modeBanner" class="mode-banner hidden"></div>
@@ -378,6 +528,8 @@
             <div class="help-body" id="helpBody"></div>
         </div>
     </div>
+
+    <div id="toast"></div>
 
     <script data-goatcounter="https://banyek.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
     <script src="node_modules/jspdf/dist/jspdf.umd.min.js"></script>

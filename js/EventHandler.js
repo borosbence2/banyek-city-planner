@@ -136,6 +136,163 @@ export class EventHandler {
         document.getElementById('closeProdOverviewBtn').addEventListener('click',
             () => p.hideModal('prodOverviewModal'));
 
+        // ── QI Simulation ─────────────────────────────────────────────────
+        document.getElementById('qiSimToggleBtn').addEventListener('click', () => {
+            const sim = p.qiSimulator;
+            if (sim.enabled) {
+                sim.disable();
+            } else {
+                sim.enable();
+                if (sim.log.length === 0) sim.reset();
+            }
+            p.updateQISimUI();
+        });
+
+        document.getElementById('qiCollectBtn').addEventListener('click', () => {
+            p.qiSimulator.collectProduction();
+            p.updateQISimUI();
+        });
+
+        document.getElementById('qiFastForwardBtn').addEventListener('click', () => {
+            const n = parseInt(document.getElementById('qiFastForwardN').value, 10) || 1;
+            p.qiSimulator.fastForward(Math.max(1, Math.min(n, 9999)));
+            p.updateQISimUI();
+        });
+
+        document.getElementById('qiResetBtn').addEventListener('click', () => {
+            if (!confirm(t('qiSim.resetConfirm'))) return;
+            p.qiSimulator.reset();
+            p.updateQISimUI();
+        });
+
+        // Log drawer toggle
+        document.getElementById('qiSimLogToggle').addEventListener('click', () => {
+            const drawer = document.getElementById('qiSimLogDrawer');
+            const body   = document.getElementById('qiSimLog');
+            const peek   = document.getElementById('qiSimLogPeek');
+            if (!drawer || !body) return;
+            const isOpen = drawer.classList.contains('is-open');
+            drawer.classList.toggle('is-open', !isOpen);
+            body.style.display   = isOpen ? 'none' : '';
+            if (peek) peek.style.display = isOpen ? '' : 'none';
+            if (!isOpen) body.scrollTop = body.scrollHeight;
+        });
+
+        // Delegated click handler — tabs, accordions, produce/recruit/spend
+        document.getElementById('qiSimRightPanel').addEventListener('click', e => {
+            // Tab switching
+            const tab = e.target.closest('[data-qi-tab]');
+            if (tab) {
+                document.querySelectorAll('#qiSimRightPanel .qi-tab').forEach(t => t.classList.remove('is-active'));
+                tab.classList.add('is-active');
+                p._qiActiveTab = tab.dataset.qiTab;
+                const tabContent = document.getElementById('qiSimTabContent');
+                if (tabContent) {
+                    const sim = p.qiSimulator;
+                    if (p._qiActiveTab === 'recruit')      tabContent.innerHTML = sim.renderMilitaryRecruitHTML();
+                    else if (p._qiActiveTab === 'produce') tabContent.innerHTML = sim.renderGoodsProductionHTML();
+                    else if (p._qiActiveTab === 'spend')   tabContent.innerHTML = sim.renderSpendResourcesHTML();
+                    else if (p._qiActiveTab === 'expand')  tabContent.innerHTML = `<div class="qi-sr-list">${sim.renderExpansionsHTML()}</div>`;
+                }
+                return;
+            }
+
+            // Accordion toggle
+            const acc = e.target.closest('[data-qi-accordion]');
+            if (acc) {
+                const accId   = acc.dataset.qiAccordion;
+                const section = document.getElementById(accId);
+                const body    = document.getElementById(accId + 'Body');
+                if (section && body) {
+                    const isOpen = section.dataset.open === '1';
+                    section.dataset.open = isOpen ? '0' : '1';
+                    body.style.display   = isOpen ? 'none' : '';
+                }
+                return;
+            }
+
+            // Euphoria track click
+            const track = e.target.closest('.qi-eu-track');
+            if (track) {
+                const r = track.getBoundingClientRect();
+                const v = Math.round(((e.clientX - r.left) / r.width) * 240);
+                const sim = p.qiSimulator;
+                sim.euphoriaPercent = Math.max(0, Math.min(240, v));
+                const euphoriaEl = document.getElementById('qiSimEuphoria');
+                if (euphoriaEl) euphoriaEl.innerHTML = sim.renderEuphoriaHTML();
+                const stockpileEl = document.getElementById('qiSimStockpile');
+                if (stockpileEl) stockpileEl.innerHTML = sim.renderStockpileHTML();
+                return;
+            }
+
+            // Produce / recruit / spend actions
+            const actionBtn = e.target.closest('[data-qi-action]');
+            if (!actionBtn) return;
+            const action      = actionBtn.dataset.qiAction;
+            const buildingId  = actionBtn.dataset.buildingId;
+            const optionIndex = parseInt(actionBtn.dataset.optionIndex, 10);
+            const spendKey    = actionBtn.dataset.spendKey;
+            let result;
+
+            if (action === 'produce') {
+                result = p.qiSimulator.purchaseGoods(buildingId, optionIndex);
+            } else if (action === 'recruit') {
+                result = p.qiSimulator.recruitSoldiers(buildingId, optionIndex);
+            } else if (action === 'spend_goods' || action === 'spend_units') {
+                const row = actionBtn.closest('.qi-sr');
+                const inputEl = row?.querySelector('input[data-spend-key]');
+                const amount = parseInt(inputEl?.value, 10) || 1;
+                result = action === 'spend_goods'
+                    ? p.qiSimulator.spendGoods(spendKey, amount)
+                    : p.qiSimulator.spendUnits(spendKey, amount);
+            } else if (action === 'expansion_remove_last') {
+                const lastArea = [...p.unlockedAreas].reverse().find(a => a.manual && !a.autoTiled);
+                if (lastArea) {
+                    p.removeExpansion(lastArea); // handles refund + updateQISimUI internally
+                } else {
+                    p.qiSimulator.refundExpansion(); // desynced state — just refund goods
+                    p.updateQISimUI();
+                }
+                return;
+            }
+
+            if (!result) return;
+            if (!result.success) {
+                actionBtn.classList.add('qi-sim-flash-err');
+                setTimeout(() => actionBtn.classList.remove('qi-sim-flash-err'), 600);
+                return;
+            }
+            p.updateQISimUI();
+        });
+
+        // Delegated change handler for right panel inputs
+        document.getElementById('qiSimRightPanel').addEventListener('change', e => {
+            const sim    = p.qiSimulator;
+            const target = e.target;
+
+            if (target.id === 'qiEuphoriaInput') {
+                sim.euphoriaPercent = Math.max(0, Math.min(300, parseFloat(target.value) || 100));
+                const euphoriaEl = document.getElementById('qiSimEuphoria');
+                if (euphoriaEl) euphoriaEl.innerHTML = sim.renderEuphoriaHTML();
+                const stockpileEl = document.getElementById('qiSimStockpile');
+                if (stockpileEl) stockpileEl.innerHTML = sim.renderStockpileHTML();
+                return;
+            }
+
+            if (target.dataset.resource) {
+                sim.startingResources[target.dataset.resource] = parseFloat(target.value) || 0;
+            }
+
+            if (target.dataset.overrideValue) {
+                sim.externalBoostOverrides[target.dataset.overrideValue] = parseFloat(target.value) || 0;
+            }
+        });
+
+        document.getElementById('qiSimApplyBonus').addEventListener('click', () => {
+            p.qiSimulator.applyStartingResources();
+            p.updateQISimUI();
+        });
+
         // Efficiency Rating import
         document.getElementById('importEfficiencyBtn').addEventListener('click', () => {
             document.getElementById('efficiencyFileInput').click();
@@ -213,6 +370,7 @@ export class EventHandler {
                     // Townhall can't be deleted — stash to pool instead
                     p.moveToPool(this._ctxBuilding);
                 } else {
+                    if (p.activeCityType === 'quantum') p.qiSimulator.logBuildingRemoved(this._ctxBuilding);
                     p.buildings = p.buildings.filter(b => b !== this._ctxBuilding);
                     if (p.selectedBuilding === this._ctxBuilding) {
                         p.selectedBuilding = null;
@@ -220,6 +378,7 @@ export class EventHandler {
                     }
                     p.renderer.draw();
                     p.importer.updateCityInfoPanel();
+                    if (p.activeCityType === 'quantum') p.updateQISimUI();
                 }
             }
             this._hideContextMenu();
@@ -448,9 +607,11 @@ export class EventHandler {
                 if (p.isTownhall(p.selectedBuilding)) {
                     p.moveToPool(p.selectedBuilding);
                 } else {
+                    if (p.activeCityType === 'quantum') p.qiSimulator.logBuildingRemoved(p.selectedBuilding);
                     p.buildings = p.buildings.filter(b => b !== p.selectedBuilding);
                     p.selectedBuilding = null;
                     p.importer.updateCityInfoPanel();
+                    if (p.activeCityType === 'quantum') p.updateQISimUI();
                 }
             }
 
