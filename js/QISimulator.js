@@ -582,12 +582,12 @@ export class QISimulator {
                 return `<span class="qi-exp-chip${ok ? '' : ' is-poor'}" title="${r.label}: have ${this._fmt(have)}, need ${perType}">${this._svg(QI_RES_ICON_PATH[r.key] || '', 10, 1.7)} ${perType}</span>`;
             }).join('');
             nextHtml = `<div class="qi-exp-row">
-                <span class="qi-exp-label">Expansion ${bought + 1}/${max}</span>
+                <span class="qi-exp-label">${t('qiSim.expansionLabel', { n: bought + 1, max })}</span>
                 <div class="qi-exp-cost">${costChips}</div>
             </div>
             <div class="qi-exp-hint">${t('qiSim.expansionHint')}</div>`;
         } else {
-            nextHtml = `<div class="qi-exp-done">All ${max} expansions placed</div>`;
+            nextHtml = `<div class="qi-exp-done">${t('qiSim.expansionAllDone', { max })}</div>`;
         }
 
         // Shortfall warning when can't afford
@@ -596,7 +596,7 @@ export class QISimulator {
             const parts = goods
                 .map(r => { const short = perType - (this.resources[r.key] || 0); return short > 0 ? `${this._svg(QI_RES_ICON_PATH[r.key] || '', 9, 1.5)} ${short}` : null; })
                 .filter(Boolean);
-            warnHtml = `<div class="qi-exp-warn">Missing: ${parts.join(' · ')}</div>`;
+            warnHtml = `<div class="qi-exp-warn">${t('qiSim.expansionMissing')} ${parts.join(' · ')}</div>`;
         }
 
         // Remove-last row (shown whenever at least one expansion was placed)
@@ -608,10 +608,10 @@ export class QISimulator {
                 `<span class="qi-exp-chip" title="${r.label}">${this._svg(QI_RES_ICON_PATH[r.key] || '', 10, 1.7)} +${refundPerType}</span>`
             ).join('');
             removeHtml = `<div class="qi-exp-row qi-exp-row--remove">
-                <span class="qi-exp-label">Remove last</span>
+                <span class="qi-exp-label">${t('qiSim.expansionRemoveLast')}</span>
                 <div class="qi-exp-cost">${refundChips}</div>
                 <button class="qi-sr-btn qi-sr-btn--danger" data-qi-action="expansion_remove_last">
-                    Remove
+                    ${t('qiSim.expansionRemoveBtn')}
                 </button>
             </div>`;
         }
@@ -976,9 +976,9 @@ export class QISimulator {
             case 'recruit':      return t('qiSim.logRecruit', { amount: entry.data.amount, unit: entry.data.unitLabel, coins: this._fmt(entry.data.cost.guild_raids_money || 0), supp: this._fmt(entry.data.cost.guild_raids_supplies || 0) });
             case 'spend_goods':
             case 'spend_units':  return t('qiSim.logSpend', { amount: entry.data.amount, label: entry.data.label });
-            case 'expansion':        return `Placed expansion ${entry.data.n}/${QI_GOODS_EXPANSION_COSTS.length} (−${entry.data.perType}× each good)`;
-            case 'expansion_refund': return `Removed expansion ${entry.data.n}/${QI_GOODS_EXPANSION_COSTS.length} (+${entry.data.perType}× each good refunded)`;
-            case 'init_expansions':  return `Initial layout: ${entry.data.count} expansion(s) charged`;
+            case 'expansion':        return t('qiSim.logExpansion',       { n: entry.data.n, max: QI_GOODS_EXPANSION_COSTS.length, perType: entry.data.perType });
+            case 'expansion_refund': return t('qiSim.logExpansionRefund',  { n: entry.data.n, max: QI_GOODS_EXPANSION_COSTS.length, perType: entry.data.perType });
+            case 'init_expansions':  return t('qiSim.logInitExpansions',   { count: entry.data.count });
             default:                 return entry.type;
         }
     }

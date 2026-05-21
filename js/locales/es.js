@@ -428,6 +428,14 @@ export const ES = {
     'qiSim.cantAffordExpansion': '⛔ Bienes insuficientes para esta expansión',
     'qiSim.tabExpand':           'Expandir',
     'qiSim.expansionHint':       'Pulsa E o usa la barra de herramientas para colocar una expansión',
+    'qiSim.expansionLabel':      'Expansión {{n}}/{{max}}',
+    'qiSim.expansionAllDone':    'Todas las {{max}} expansiones colocadas',
+    'qiSim.expansionMissing':    'Falta:',
+    'qiSim.expansionRemoveLast': 'Eliminar última',
+    'qiSim.expansionRemoveBtn':  'Eliminar',
+    'qiSim.logExpansion':        'Expansión {{n}}/{{max}} colocada (−{{perType}}× cada bien)',
+    'qiSim.logExpansionRefund':  'Expansión {{n}}/{{max}} eliminada (+{{perType}}× cada bien reembolsado)',
+    'qiSim.logInitExpansions':   'Disposición inicial: {{count}} expansión/expansiones cobradas',
 
     // new
     'qiSim.euphoria':         '🌟 Euphoria',

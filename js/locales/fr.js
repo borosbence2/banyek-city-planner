@@ -428,6 +428,14 @@ export const FR = {
     'qiSim.cantAffordExpansion': '⛔ Marchandises insuffisantes pour cette extension',
     'qiSim.tabExpand':           'Étendre',
     'qiSim.expansionHint':       'Appuyez sur E ou utilisez la barre d\'outils pour placer une extension',
+    'qiSim.expansionLabel':      'Extension {{n}}/{{max}}',
+    'qiSim.expansionAllDone':    'Toutes les {{max}} extensions placées',
+    'qiSim.expansionMissing':    'Manque :',
+    'qiSim.expansionRemoveLast': 'Retirer la dernière',
+    'qiSim.expansionRemoveBtn':  'Retirer',
+    'qiSim.logExpansion':        'Extension {{n}}/{{max}} placée (−{{perType}}× chaque marchandise)',
+    'qiSim.logExpansionRefund':  'Extension {{n}}/{{max}} retirée (+{{perType}}× chaque marchandise remboursée)',
+    'qiSim.logInitExpansions':   'Disposition initiale : {{count}} extension(s) facturée(s)',
 
     // new
     'qiSim.euphoria':         '🌟 Euphoria',

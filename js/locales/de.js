@@ -428,6 +428,14 @@ export const DE = {
     'qiSim.cantAffordExpansion': '⛔ Nicht genug Waren für diese Erweiterung',
     'qiSim.tabExpand':           'Erweitern',
     'qiSim.expansionHint':       'Drücke E oder nutze die Werkzeugleiste, um eine Erweiterung zu platzieren',
+    'qiSim.expansionLabel':      'Erweiterung {{n}}/{{max}}',
+    'qiSim.expansionAllDone':    'Alle {{max}} Erweiterungen platziert',
+    'qiSim.expansionMissing':    'Fehlt:',
+    'qiSim.expansionRemoveLast': 'Letzte entfernen',
+    'qiSim.expansionRemoveBtn':  'Entfernen',
+    'qiSim.logExpansion':        'Erweiterung {{n}}/{{max}} platziert (−{{perType}}× jede Ware)',
+    'qiSim.logExpansionRefund':  'Erweiterung {{n}}/{{max}} entfernt (+{{perType}}× jede Ware zurückerstattet)',
+    'qiSim.logInitExpansions':   'Startlayout: {{count}} Erweiterung(en) abgerechnet',
 
     // new
     'qiSim.euphoria':         '🌟 Euphoria',

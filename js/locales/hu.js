@@ -428,6 +428,14 @@ export const HU = {
     'qiSim.cantAffordExpansion': '⛔ Nincs elég áru a bővítmény lehelyezéséhez',
     'qiSim.tabExpand':           'Bővítés',
     'qiSim.expansionHint':       'Nyomj E-t vagy használd az eszköztárat egy bővítmény lehelyezéséhez',
+    'qiSim.expansionLabel':      '{{n}}/{{max}}. bővítmény',
+    'qiSim.expansionAllDone':    'Mind a {{max}} bővítmény lehelyezve',
+    'qiSim.expansionMissing':    'Hiányzik:',
+    'qiSim.expansionRemoveLast': 'Utolsó visszavonása',
+    'qiSim.expansionRemoveBtn':  'Visszavon',
+    'qiSim.logExpansion':        '{{n}}/{{max}}. bővítmény lehelyezve (−{{perType}}× minden áruból)',
+    'qiSim.logExpansionRefund':  '{{n}}/{{max}}. bővítmény visszavonva (+{{perType}}× minden áruból visszatérítve)',
+    'qiSim.logInitExpansions':   'Kezdeti elrendezés: {{count}} bővítmény felszámítva',
 
     // new
     'qiSim.euphoria':         '🌟 Euphoria',
