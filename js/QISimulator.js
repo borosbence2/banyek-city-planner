@@ -19,7 +19,7 @@ const EUPHORIA_THRESHOLDS = [
     { max: 80,       mult: 0.8, state: 'Unhappy'      },
     { max: 120,      mult: 1.0, state: 'Neutral'      },
     { max: 140,      mult: 1.1, state: 'Content'      },
-    { max: 200,      mult: 1.2, state: 'Happy'        },
+    { max: 199,      mult: 1.2, state: 'Happy'        },
     { max: Infinity, mult: 1.5, state: 'Enthusiastic' },
 ];
 
@@ -300,15 +300,15 @@ export class QISimulator {
         const euphMult = this._getEuphoriaInfo(this.euphoriaPercent).mult;
         const reachableRoads = this.planner.computeRoadConnectivity();
 
-        // Town hall is always present — per hour × 10h cycle
-        deltas['guild_raids_money']         = 500_000; // 50k/h
-        deltas['guild_raids_supplies']      = 500_000; // 50k/h
-        deltas['guild_raids_chrono_alloy']  =     150; // 15/h
-        // Base AP regeneration: 5,000/hour × 10h
-        deltas['guild_raids_action_points'] =  50_000;
+        // Town hall production (values are per 10h cycle; flat — not affected by euphoria)
+        deltas['guild_raids_money']         = 50_000;
+        deltas['guild_raids_supplies']      = 50_000;
+        deltas['guild_raids_chrono_alloy']  =     15;
+        // Base AP regeneration: 50,000 per cycle (flat — not affected by euphoria)
+        deltas['guild_raids_action_points'] = 50_000;
 
         for (const building of this.planner.buildings) {
-            if (building.type === 'main_building') continue; // handled above as base rate
+            if (building.type === 'main_building') continue; // town hall handled above as flat
 
             if (building.needsRoad) {
                 if (!reachableRoads || !this.planner.isBuildingRoadConnected(building, reachableRoads)) {
@@ -316,8 +316,7 @@ export class QISimulator {
                 }
             }
 
-            const euphoriaApplies = building.type === 'residential' || building.type === 'production';
-
+            // Euphoria multiplies all prod-stat resources from non-main buildings
             const prod  = building.prod || this._getTemplateProd(building.id);
             if (prod) {
                 const stats = prod['AllAge'] || prod['GuildRaids'] || Object.values(prod)[0];
@@ -326,20 +325,18 @@ export class QISimulator {
                         const resource  = stripTimerSuffix(rawKey);
                         const boostType = this._getBoostTypeForResource(resource);
                         const prodMult  = boostType ? (1 + (boosts[boostType] || 0) / 100) : 1;
-                        const applyEuph = euphoriaApplies &&
-                            (resource === 'guild_raids_money' || resource === 'guild_raids_supplies');
-                        const finalMult = prodMult * (applyEuph ? euphMult : 1);
+                        const finalMult = prodMult * euphMult;
                         deltas[resource] = (deltas[resource] || 0) + val * finalMult;
                     }
                 }
             }
 
-            // Flat QA accumulation from cultural buildings
+            // AP collection from cultural buildings (boost value is per hour × 10h cycle)
             const buildingBoosts = building.boosts || this._getTemplateBoosts(building.id);
             for (const boost of (buildingBoosts || [])) {
                 if (boost.type === 'guild_raids_action_points_collection') {
                     deltas['guild_raids_action_points'] =
-                        (deltas['guild_raids_action_points'] || 0) + (boost.value || 0);
+                        (deltas['guild_raids_action_points'] || 0) + (boost.value || 0) * 10;
                 }
             }
         }
