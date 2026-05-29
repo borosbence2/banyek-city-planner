@@ -2419,9 +2419,12 @@ body.dark #colorLegend [style*="background: #f9f9f9"] {
     overflow: hidden;
 }
 
-/* When sim panel is open, widen column 3 to 340px */
+/* When sim panel is open, layout becomes 4 columns: sidebar | canvas | pool | sim */
 .container.qi-sim-open {
-    grid-template-columns: 300px 1fr 340px;
+    grid-template-columns: 300px minmax(400px, 1fr) 200px 340px;
+}
+.container.qi-sim-open .qi {
+    grid-column: 4;
 }
 
 /* Panel header — matches sidebar gradient */

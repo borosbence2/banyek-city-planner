@@ -719,6 +719,18 @@ export class EventHandler {
 
         const gridPos = p.getGridCoords(e.clientX, e.clientY);
 
+        // Left-click drag outside the playable grid → pan the camera
+        // (only in default mode; tool-active modes still get their click on out-of-grid cells)
+        if (e.button === 0 &&
+            !p.placingRoad && !p.placingWideRoad && !p.placingExpansion && !p.selectedTemplate &&
+            !p.isCellInGrid(gridPos.x, gridPos.y)) {
+            p.isPanning = true;
+            p.lastPanX  = e.clientX;
+            p.lastPanY  = e.clientY;
+            p.canvas.style.cursor = 'grabbing';
+            return;
+        }
+
         // Road placement — smart toggle: drag on existing road erases, drag on empty paints
         if (p.placingRoad) {
             p.captureSnapshot();
@@ -1274,7 +1286,17 @@ export class EventHandler {
             gridPos.x >= b.x && gridPos.x < b.x + b.width &&
             gridPos.y >= b.y && gridPos.y < b.y + b.height
         );
-        p.canvas.style.cursor = hovering ? 'grab' : 'default';
+        if (hovering) {
+            p.canvas.style.cursor = 'grab';
+            return;
+        }
+        // Off-grid cells in default mode are pannable
+        const inDefaultMode = !p.placingRoad && !p.placingWideRoad && !p.placingExpansion && !p.selectedTemplate;
+        if (inDefaultMode && !p.isCellInGrid(gridPos.x, gridPos.y)) {
+            p.canvas.style.cursor = 'grab';
+            return;
+        }
+        p.canvas.style.cursor = 'default';
     }
 
     _hideTooltip() {

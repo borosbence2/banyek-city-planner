@@ -383,6 +383,13 @@ export class CityPlanner {
         return this.unlockedCells.has(`${x},${y}`);
     }
 
+    /** True if (x,y) is inside the visible/playable grid area. */
+    isCellInGrid(x, y) {
+        if (this.unlockedCells) return this.unlockedCells.has(`${x},${y}`);
+        return x >= this.gridOffsetX && x < this.gridOffsetX + this.gridWidth &&
+               y >= this.gridOffsetY && y < this.gridOffsetY + this.gridHeight;
+    }
+
     // ========================================
     // PLACEMENT VALIDATION
     // ========================================
@@ -2681,13 +2688,12 @@ export class CityPlanner {
         }
 
         // Right panel visibility — show when QI tab active + sim enabled
+        // Pool panel stays visible; sim takes its own column via .qi-sim-open layout.
         const rightPanel = document.getElementById('qiSimRightPanel');
-        const poolPanel  = document.getElementById('poolPanel');
         const container  = document.querySelector('.container');
         const show = isQI && sim.enabled;
 
         if (rightPanel) rightPanel.style.display = show ? '' : 'none';
-        if (poolPanel)  poolPanel.style.display  = show ? 'none' : '';
         if (container)  container.classList.toggle('qi-sim-open', show);
 
         if (!show) return;
