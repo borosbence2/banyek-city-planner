@@ -895,7 +895,8 @@ export class EventHandler {
             const newX = snapPos.x;
             const newY = snapPos.y;
             const { x: rsx, y: rsy } = p.roadDragStart;
-            if (newX >= 0 && newY >= 0 && newX < p.gridWidth && newY < p.gridHeight &&
+            if (newX >= p.gridOffsetX && newY >= p.gridOffsetY &&
+                newX < p.gridOffsetX + p.gridWidth && newY < p.gridOffsetY + p.gridHeight &&
                 p.isCellUnlocked(newX, newY) && !p.isBuildingAt(newX, newY)
             ) {
                 p.roads.add(`${newX},${newY}`);
@@ -966,9 +967,9 @@ export class EventHandler {
             b.y = snapPos.y - p.dragOffset.y;
 
             const offGrid =
-                b.x < 0 || b.y < 0 ||
-                b.x + b.width  > p.gridWidth ||
-                b.y + b.height > p.gridHeight;
+                b.x < p.gridOffsetX || b.y < p.gridOffsetY ||
+                b.x + b.width  > p.gridOffsetX + p.gridWidth ||
+                b.y + b.height > p.gridOffsetY + p.gridHeight;
 
             // Also treat dropping on locked (non-unlocked) cells as off-grid
             const onLockedArea = !offGrid && p.unlockedCells && (() => {
