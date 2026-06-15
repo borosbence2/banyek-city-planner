@@ -324,7 +324,9 @@ export class QISimulator {
                     for (const [rawKey, val] of Object.entries(stats)) {
                         const resource  = stripTimerSuffix(rawKey);
                         const boostType = this._getBoostTypeForResource(resource);
-                        const prodMult  = boostType ? (1 + (boosts[boostType] || 0) / 100) : 1;
+                        // Boost % is the multiplier directly: listed production is the value at
+                        // 100% boost (×1.0), so +100% total boost → ×1.0, +200% → ×2.0, etc.
+                        const prodMult  = boostType ? ((boosts[boostType] || 0) / 100) : 1;
                         const finalMult = prodMult * euphMult;
                         deltas[resource] = (deltas[resource] || 0) + val * finalMult;
                     }
