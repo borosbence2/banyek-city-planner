@@ -399,7 +399,7 @@ export const EN = {
     'qiSim.exportLog':        '📄 Export Plan to PDF',
     'qiSim.startingResources':'Starting Resources',
     'qiSim.externalBoosts':   'External Boosts',
-    'qiSim.externalBoostsHint': 'Add % from guild bonuses or Great Buildings on top of your city layout.',
+    'qiSim.externalBoostsHint': 'Add % from main-city buildings with QI bonuses (e.g. Ascended event buildings) on top of your settlement layout.',
     'qiSim.suppliesBoost':    'Supplies production',
     'qiSim.coinsBoost':       'Coins production',
     'qiSim.overrideTitle':    'Add extra % on top of auto-calculated value',

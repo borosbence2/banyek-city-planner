@@ -399,7 +399,7 @@ export const ES = {
     'qiSim.exportLog':        '📄 Exportar plan a PDF',
     'qiSim.startingResources':'Recursos iniciales',
     'qiSim.externalBoosts':   'Bonificaciones externas',
-    'qiSim.externalBoostsHint': 'Agrega % de bonificaciones de gremio o Grandes Edificios sobre tu diseño.',
+    'qiSim.externalBoostsHint': 'Agrega % de edificios de la ciudad principal con bonos de IC (p. ej. edificios de evento Ascendidos).',
     'qiSim.suppliesBoost':    'Producción de suministros',
     'qiSim.coinsBoost':       'Producción de monedas',
     'qiSim.overrideTitle':    'Agregar % adicional al valor calculado automáticamente',

@@ -399,7 +399,7 @@ export const HU = {
     'qiSim.exportLog':        '📄 Terv exportálása PDF-be',
     'qiSim.startingResources':'Kezdeti erőforrások',
     'qiSim.externalBoosts':   'Külső bónuszok',
-    'qiSim.externalBoostsHint': 'Adj hozzá %-ot a céhes bónuszokból vagy Nagy Épületekből a városod elrendezésén felül.',
+    'qiSim.externalBoostsHint': 'Add hozzá a fővárosi épületek KI-bónuszait (pl. Felemelkedett event épületek) a település elrendezésén felül.',
     'qiSim.suppliesBoost':    'Nyersanyag-termelés',
     'qiSim.coinsBoost':       'Érmetermelés',
     'qiSim.overrideTitle':    'Extra %-ot adj hozzá az automatikusan számított értékhez',

@@ -399,7 +399,7 @@ export const FR = {
     'qiSim.exportLog':        '📄 Exporter le plan en PDF',
     'qiSim.startingResources':'Ressources initiales',
     'qiSim.externalBoosts':   'Bonus externes',
-    'qiSim.externalBoostsHint': 'Ajoutez des % provenant des bonus de guilde ou des Grands Bâtiments.',
+    'qiSim.externalBoostsHint': 'Ajoutez les % des bâtiments de la ville principale avec bonus IQ (p. ex. bâtiments d\'événement Transcendés).',
     'qiSim.suppliesBoost':    'Production de fournitures',
     'qiSim.coinsBoost':       'Production de pièces',
     'qiSim.overrideTitle':    'Ajouter un % supplémentaire à la valeur calculée automatiquement',

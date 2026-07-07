@@ -399,7 +399,7 @@ export const DE = {
     'qiSim.exportLog':        '📄 Plan als PDF exportieren',
     'qiSim.startingResources':'Startressourcen',
     'qiSim.externalBoosts':   'Externe Boni',
-    'qiSim.externalBoostsHint': '% aus Gildenboni oder Großen Gebäuden zum Stadtlayout hinzufügen.',
+    'qiSim.externalBoostsHint': '% aus Hauptstadt-Gebäuden mit QI-Boni (z. B. aufgestiegene Event-Gebäude) zum Layout hinzufügen.',
     'qiSim.suppliesBoost':    'Versorgungsproduktion',
     'qiSim.coinsBoost':       'Münzproduktion',
     'qiSim.overrideTitle':    'Extra % zum automatisch berechneten Wert hinzufügen',
