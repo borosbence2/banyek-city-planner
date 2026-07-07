@@ -9,6 +9,8 @@ import { FoeImporter }        from './FoeImporter.js';
 import { Optimizer }          from './Optimizer.js';
 import { UndoHistory }        from './UndoHistory.js';
 import { ProductionOverview } from './ProductionOverview.js';
+import { BoostsDashboard } from './BoostsDashboard.js';
+import { DB_META } from '../data/db_meta.js';
 import { QISimulator }        from './QISimulator.js';
 import { BUILDINGS }          from '../data/foe_buildings_database.js';
 import { QI_BUILDINGS }       from '../data/qi_buildings_database.js';
@@ -97,15 +99,19 @@ export class CityPlanner {
         this.optimizer        = new Optimizer(this);
         this.undoHistory      = new UndoHistory(this);
         this.productionOverview = new ProductionOverview(this);
+        this.boostsDashboard    = new BoostsDashboard(this);
         this.qiSimulator        = new QISimulator(this);
 
         this._placeDefaultTownhall();
         this.events.setup();
         this.productionOverview.setupEvents();
+        this.boostsDashboard.setupEvents();
         this.updateBuildingList();
         this.updatePoolPanel();
         this.resizeCanvas();
         this.updateCityTabs();
+        this.updateDbFreshness();
+        window.addEventListener('localechange', () => this.updateDbFreshness());
         this._loadFromUrlHash();
 
         // i18n: apply DOM translations, build pickers and dynamic content
@@ -2673,6 +2679,43 @@ export class CityPlanner {
     }
 
     /** Re-render the QI simulation right panel to reflect current state. */
+    /**
+     * Show when the building databases were last regenerated; buildings added
+     * to the game since then are missing from the planner. Warns after 45 days.
+     */
+    updateDbFreshness() {
+        const el = document.getElementById('dbFreshness');
+        if (!el) return;
+        const days = Math.floor((Date.now() - new Date(DB_META.generatedAt).getTime()) / 86_400_000);
+        const stale = days > 45;
+        el.textContent = t(stale ? 'sidebar.dbFreshnessStale' : 'sidebar.dbFreshness',
+                           { date: DB_META.generatedAt, days });
+        el.title = t('sidebar.dbFreshnessHint');
+        el.classList.toggle('stale', stale);
+    }
+
+    /**
+     * Write main-city QI production % into the QI simulator's external boost
+     * fields (used by the Boosts Dashboard "apply" button). Also patches the
+     * stored quantum snapshot so the values survive a later tab switch.
+     */
+    applyQIExternalBoosts(coins, supplies) {
+        const ext = {
+            guild_raids_coins_production:    coins,
+            guild_raids_supplies_production: supplies,
+        };
+        this.qiSimulator.externalBoostOverrides = {
+            ...this.qiSimulator.externalBoostOverrides, ...ext,
+        };
+        const qSnap = this.cities.quantum;
+        if (qSnap && qSnap.qiSimulator) {
+            qSnap.qiSimulator.externalBoostOverrides = {
+                ...qSnap.qiSimulator.externalBoostOverrides, ...ext,
+            };
+        }
+        if (this.activeCityType === 'quantum') this.updateQISimUI();
+    }
+
     updateQISimUI() {
         const sim = this.qiSimulator;
         const isQI = this.activeCityType === 'quantum';

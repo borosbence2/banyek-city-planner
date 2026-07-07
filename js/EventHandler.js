@@ -136,6 +136,12 @@ export class EventHandler {
         document.getElementById('closeProdOverviewBtn').addEventListener('click',
             () => p.hideModal('prodOverviewModal'));
 
+        // Boosts dashboard
+        document.getElementById('boostsDashboardBtn').addEventListener('click',
+            () => { track('boosts-dashboard', 'Boosts Dashboard'); p.boostsDashboard.show(); });
+        document.getElementById('closeBoostsDashboardBtn').addEventListener('click',
+            () => p.hideModal('boostsDashboardModal'));
+
         // ── QI Simulation ─────────────────────────────────────────────────
         document.getElementById('qiSimToggleBtn').addEventListener('click', () => {
             const sim = p.qiSimulator;
@@ -646,7 +652,7 @@ export class EventHandler {
         if (e.key === 'Escape') {
             const MODALS = [
                 'importFoeModal', 'addBuildingModal', 'saveLoadModal',
-                'shareModal', 'efficiencyImportModal', 'prodOverviewModal', 'helpModal',
+                'shareModal', 'efficiencyImportModal', 'prodOverviewModal', 'boostsDashboardModal', 'helpModal',
             ];
             const openModal = MODALS.find(id => document.getElementById(id)?.classList.contains('active'));
             if (openModal) {
