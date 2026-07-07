@@ -2427,7 +2427,6 @@ export class CityPlanner {
                 this.qiSimulator.resources = {};
                 this.qiSimulator.log = [];
                 this.qiSimulator.externalBoostOverrides = {};
-                this.qiSimulator.useBoostOverrides = {};
             }
             this.updateQISimUI();
         }

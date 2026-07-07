@@ -285,6 +285,8 @@ export class EventHandler {
 
             if (target.dataset.overrideValue) {
                 sim.externalBoostOverrides[target.dataset.overrideValue] = parseFloat(target.value) || 0;
+                const stockpileEl = document.getElementById('qiSimStockpile');
+                if (stockpileEl) stockpileEl.innerHTML = sim.renderStockpileHTML();
             }
         });
 

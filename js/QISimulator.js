@@ -19,7 +19,7 @@ const EUPHORIA_THRESHOLDS = [
     { max: 80,       mult: 0.8, state: 'Unhappy'      },
     { max: 120,      mult: 1.0, state: 'Neutral'      },
     { max: 140,      mult: 1.1, state: 'Content'      },
-    { max: 199,      mult: 1.2, state: 'Happy'        },
+    { max: 199.999,  mult: 1.2, state: 'Happy'        }, // <200% (FoE Helper: 1.5 only at ≥200%)
     { max: Infinity, mult: 1.5, state: 'Enthusiastic' },
 ];
 
@@ -227,7 +227,6 @@ export class QISimulator {
 
         this.startingResources      = { ...DEFAULT_STARTING_RESOURCES };
         this.externalBoostOverrides = {};
-        this.useBoostOverrides      = {};
         this.euphoriaPercent        = 100;
         this.expansionsBought       = 0;
     }
@@ -285,9 +284,7 @@ export class QISimulator {
         const auto   = this.calculateAutoBoosts();
         const result = { ...auto };
         for (const [type, val] of Object.entries(this.externalBoostOverrides)) {
-            if (this.useBoostOverrides[type]) {
-                result[type] = (result[type] || 0) + (val || 0);
-            }
+            result[type] = (result[type] || 0) + (val || 0);
         }
         return result;
     }
@@ -660,7 +657,6 @@ export class QISimulator {
             log:                  JSON.parse(JSON.stringify(this.log)),
             startingResources:    { ...this.startingResources },
             externalBoostOverrides: { ...this.externalBoostOverrides },
-            useBoostOverrides:    { ...this.useBoostOverrides },
             euphoriaPercent:      this.euphoriaPercent,
         };
     }
@@ -675,7 +671,6 @@ export class QISimulator {
         const savedSR = snap.startingResources || {};
         this.startingResources = Object.keys(savedSR).length > 0 ? savedSR : { ...DEFAULT_STARTING_RESOURCES };
         this.externalBoostOverrides = snap.externalBoostOverrides || {};
-        this.useBoostOverrides    = snap.useBoostOverrides    || {};
         this.euphoriaPercent      = snap.euphoriaPercent      ?? 100;
         // Fill in any default resources that are absent from the saved state
         for (const [key, val] of Object.entries(this.startingResources)) {
