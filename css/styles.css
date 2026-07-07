@@ -1209,6 +1209,60 @@ body.dark .help-forras { color: #484868; }
     border-bottom: 1px solid #eef0f3;
 }
 
+/* Database freshness indicator (Import group) */
+.db-freshness {
+    font-size: 10px;
+    color: #999;
+    margin-top: 4px;
+    cursor: help;
+}
+.db-freshness.stale { color: #c77700; font-weight: 600; }
+body.dark .db-freshness { color: #666688; }
+body.dark .db-freshness.stale { color: #e09030; }
+
+/* Boosts Dashboard */
+.boosts-matrix-wrap { overflow-x: auto; }
+.boosts-matrix {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+}
+.boosts-matrix th {
+    text-align: right;
+    color: #777;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-bottom: 1px solid #dde1e6;
+    white-space: nowrap;
+}
+.boosts-matrix td {
+    text-align: right;
+    padding: 4px 8px;
+    border-bottom: 1px solid #eef0f3;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #2e7d32;
+    white-space: nowrap;
+}
+.boosts-matrix td.boosts-stat {
+    text-align: left;
+    font-weight: 400;
+    color: inherit;
+}
+.boosts-note {
+    font-size: 10px;
+    color: #888;
+    margin-top: 6px;
+    font-style: italic;
+}
+body.dark .boosts-matrix th { color: #7070a0; border-bottom-color: #3a3a52; }
+body.dark .boosts-matrix td { border-bottom-color: #2e2e44; color: #7bc47f; }
+body.dark .boosts-matrix td.boosts-stat { color: inherit; }
+body.dark .boosts-note { color: #666688; }
+
 /* Efficiency Rating import */
 .efficiency-pertile-label {
     display: flex;

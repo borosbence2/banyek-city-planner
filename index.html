@@ -72,9 +72,11 @@
                         <input type="checkbox" id="efficiencyPerTile" checked> <span data-i18n="sidebar.perTile">per-tile</span>
                     </label>
                 </div>
+                <div class="db-freshness" id="dbFreshness"></div>
             </div>
 
             <button class="btn prod-btn" id="prodOverviewBtn" data-i18n="sidebar.prodOverview">📊 Production Overview</button>
+            <button class="btn prod-btn" id="boostsDashboardBtn" data-i18n="sidebar.boostsDashboard">⚡ Boosts Dashboard</button>
 
             <!-- Save / Export — collapsed by default -->
             <div class="section collapsible-section">
@@ -514,6 +516,17 @@
                 <button class="btn tool btn-small" id="closeProdOverviewBtn" data-i18n="prodModal.close">✕ Close</button>
             </div>
             <div id="prodOverviewBody"></div>
+        </div>
+    </div>
+
+    <!-- Boosts Dashboard Modal -->
+    <div class="modal" id="boostsDashboardModal">
+        <div class="modal-content prod-overview-modal">
+            <div class="prod-overview-header">
+                <h2 data-i18n="boostsModal.title">⚡ Boosts Dashboard</h2>
+                <button class="btn tool btn-small" id="closeBoostsDashboardBtn" data-i18n="boostsModal.close">✕ Close</button>
+            </div>
+            <div id="boostsDashboardBody"></div>
         </div>
     </div>
 
